@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Reduction Tool</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="app">
+        <header class="app-header">
+            <h1>Color Reduction Tool</h1>
+        </header>
+        <main class="app-main">
+            <aside class="sidebar">
+                <section id="palette-manager" class="panel">
+                    <h2>Palettes</h2>
+                    <div id="palette-list" class="palette-list">
+                        <!-- Palette items will be injected here -->
+                        <div class="empty-state">No palettes loaded</div>
+                    </div>
+                    <input type="file" id="palette-input" accept="image/png, image/jpeg" hidden>
+                    <button id="add-palette-btn" class="btn primary">Add Palette Image</button>
+                </section>
+                <section id="algorithm-selector" class="panel">
+                    <h2>Algorithms</h2>
+                    <div class="control-group">
+                        <label>Algorithm Type</label>
+                        <select id="algo-type">
+                            <option value="nearest">Nearest Neighbor (RGB)</option>
+                            <option value="luma">Luma Weighted</option>
+                            <option value="cielab">Perceptual (CIELAB)</option>
+                            <option value="weighted">Weighted (HSV)</option>
+                        </select>
+                    </div>
+                    <div id="algo-params" class="params-container">
+                        <!-- Dynamic parameters -->
+                    </div>
+                    <div id="edge-adjust-group" class="control-group">
+                        <label>Edge Adjustment</label>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="edge-adjust-enable">
+                            <label for="edge-adjust-enable">Enable Edge Brightness</label>
+                        </div>
+                        <input type="range" id="edge-strength" min="-100" max="100" value="0" disabled>
+                        <span id="edge-strength-val">0%</span>
+                    </div>
+                    <button id="apply-algo-btn" class="btn primary">Add to Comparison</button>
+                </section>
+            </aside>
+            <section class="content-area">
+                <div class="toolbar">
+                    <input type="file" id="source-image-input" accept="image/png, image/jpeg" hidden>
+                    <button id="load-image-btn" class="btn secondary">Load Source Image</button>
+                    <div style="display:flex; align-items:center; gap:10px; margin-left:auto">
+                        <label for="zoom-slider" style="font-size:0.9rem">Zoom</label>
+                        <input type="range" id="zoom-slider" min="50" max="300" value="100" style="width:100px">
+                        <span id="zoom-val" style="font-size:0.8rem; width:35px">100%</span>
+                    </div>
+                </div>
+                <div id="comparison-grid" class="grid-view">
+                    <!-- Comparison items will be injected here -->
+                    <div class="empty-state">Load an image and apply an algorithm to start</div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="js/namespace.js"></script>
+    <script src="js/core/imageUtils.js"></script>
+    <script src="js/core/reducer.js"></script>
+    <script src="js/ui/paletteManager.js"></script>
+    <script src="js/ui/algorithmSelector.js"></script>
+    <script src="js/ui/comparisonView.js"></script>
+    <script src="js/ui/detailView.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
+</html>
