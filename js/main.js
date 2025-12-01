@@ -108,7 +108,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         this.sourceImageData.height
                     );
 
-                    const resultData = CRT.core.reduceImage(sourceCopy, palette, this.sourceEdges, config);
+                    // Apply Pre-processing
+                    if (config.preProcess) {
+                        CRT.core.applyPreProcessing(sourceCopy, config.preProcess);
+                    }
+
+                    // If edge adjustment is enabled, we might need to re-calculate edges based on the pre-processed image
+                    // because contrast/brightness changes affect edge magnitudes.
+                    let edgesToUse = this.sourceEdges;
+                    if (config.edgeEnabled) {
+                        // Re-calculate edges for the pre-processed image
+                        edgesToUse = CRT.core.detectEdges(sourceCopy);
+                    }
+
+                    const resultData = CRT.core.reduceImage(sourceCopy, palette, edgesToUse, config);
                     this.comparisonView.addItem(resultData, config, 'Reduced');
                 } catch (err) {
                     console.error('Reduction failed:', err);

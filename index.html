@@ -29,6 +29,58 @@
                 </section>
                 <section id="algorithm-selector" class="panel">
                     <h2>Algorithms</h2>
+
+                    <!-- Pre-processing Controls -->
+                    <div class="control-group">
+                        <h3>Pre-color reduction processing</h3>
+                        <div class="sub-group">
+                            <label>RGB Adjustment (-255 to 255)</label>
+                            <div class="slider-row">
+                                <label for="pre-r">R</label>
+                                <input type="range" id="pre-r" min="-255" max="255" value="0">
+                                <span id="pre-r-val">0</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="pre-g">G</label>
+                                <input type="range" id="pre-g" min="-255" max="255" value="0">
+                                <span id="pre-g-val">0</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="pre-b">B</label>
+                                <input type="range" id="pre-b" min="-255" max="255" value="0">
+                                <span id="pre-b-val">0</span>
+                            </div>
+                        </div>
+                        <div class="sub-group">
+                            <label>Brightness / Contrast (-255 to 255)</label>
+                            <div class="slider-row">
+                                <label for="pre-brightness">Bright</label>
+                                <input type="range" id="pre-brightness" min="-255" max="255" value="0">
+                                <span id="pre-brightness-val">0</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="pre-contrast">Cont</label>
+                                <input type="range" id="pre-contrast" min="-255" max="255" value="0">
+                                <span id="pre-contrast-val">0</span>
+                            </div>
+                        </div>
+                        <div class="sub-group">
+                            <label>Saturation / Gamma</label>
+                            <div class="slider-row">
+                                <label for="pre-saturation">Sat</label>
+                                <input type="range" id="pre-saturation" min="-100" max="100" value="0">
+                                <span id="pre-saturation-val">0</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="pre-gamma">Gam</label>
+                                <input type="range" id="pre-gamma" min="10" max="300" value="100">
+                                <span id="pre-gamma-val">1.0</span>
+                            </div>
+                        </div>
+                        <button id="pre-reset-btn" class="btn secondary small">Reset Pre-processing</button>
+                    </div>
+                    <hr class="separator">
+
                     <div class="control-group">
                         <label>Algorithm Type</label>
                         <select id="algo-type">

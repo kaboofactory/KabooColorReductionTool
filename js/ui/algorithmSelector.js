@@ -7,6 +7,25 @@ CRT.ui.AlgorithmSelector = class {
         this.edgeVal = document.getElementById(edgeValId);
         this.edgeGroup = document.getElementById(edgeGroupId);
 
+        // Pre-processing inputs
+        this.preR = document.getElementById('pre-r');
+        this.preG = document.getElementById('pre-g');
+        this.preB = document.getElementById('pre-b');
+        this.preBrightness = document.getElementById('pre-brightness');
+        this.preContrast = document.getElementById('pre-contrast');
+        this.preSaturation = document.getElementById('pre-saturation');
+        this.preGamma = document.getElementById('pre-gamma');
+
+        this.preRVal = document.getElementById('pre-r-val');
+        this.preGVal = document.getElementById('pre-g-val');
+        this.preBVal = document.getElementById('pre-b-val');
+        this.preBrightnessVal = document.getElementById('pre-brightness-val');
+        this.preContrastVal = document.getElementById('pre-contrast-val');
+        this.preSaturationVal = document.getElementById('pre-saturation-val');
+        this.preGammaVal = document.getElementById('pre-gamma-val');
+
+        this.preResetBtn = document.getElementById('pre-reset-btn');
+
         this.init();
     }
 
@@ -23,6 +42,32 @@ CRT.ui.AlgorithmSelector = class {
         });
         this.edgeStrength.addEventListener('input', (e) => {
             this.edgeVal.textContent = `${e.target.value}%`;
+        });
+
+        // Pre-processing listeners
+        const linkSlider = (input, valSpan) => {
+            input.addEventListener('input', (e) => valSpan.textContent = e.target.value);
+        };
+        linkSlider(this.preR, this.preRVal);
+        linkSlider(this.preG, this.preGVal);
+        linkSlider(this.preB, this.preBVal);
+        linkSlider(this.preBrightness, this.preBrightnessVal);
+        linkSlider(this.preContrast, this.preContrastVal);
+        linkSlider(this.preSaturation, this.preSaturationVal);
+
+        // Gamma needs special handling for display (div by 100)
+        this.preGamma.addEventListener('input', (e) => {
+            this.preGammaVal.textContent = (e.target.value / 100).toFixed(1);
+        });
+
+        this.preResetBtn.addEventListener('click', () => {
+            this.preR.value = 0; this.preRVal.textContent = '0';
+            this.preG.value = 0; this.preGVal.textContent = '0';
+            this.preB.value = 0; this.preBVal.textContent = '0';
+            this.preBrightness.value = 0; this.preBrightnessVal.textContent = '0';
+            this.preContrast.value = 0; this.preContrastVal.textContent = '0';
+            this.preSaturation.value = 0; this.preSaturationVal.textContent = '0';
+            this.preGamma.value = 100; this.preGammaVal.textContent = '1.0';
         });
 
         this.renderParams(); // Initial render
@@ -67,7 +112,16 @@ CRT.ui.AlgorithmSelector = class {
             type: type,
             edgeEnabled: this.edgeEnable.checked,
             edgeStrength: this.edgeEnable.checked ? parseInt(this.edgeStrength.value, 10) : 0,
-            weights: { h: 0, s: 0, v: 0 }
+            weights: { h: 0, s: 0, v: 0 },
+            preProcess: {
+                r: parseInt(this.preR.value, 10) || 0,
+                g: parseInt(this.preG.value, 10) || 0,
+                b: parseInt(this.preB.value, 10) || 0,
+                brightness: parseInt(this.preBrightness.value, 10) || 0,
+                contrast: parseInt(this.preContrast.value, 10) || 0,
+                saturation: parseInt(this.preSaturation.value, 10) || 0,
+                gamma: (parseInt(this.preGamma.value, 10) || 100) / 100
+            }
         };
 
         if (type === 'weighted') {

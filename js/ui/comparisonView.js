@@ -126,6 +126,23 @@ CRT.ui.ComparisonView = class {
         if (config.edgeStrength !== 0) {
             text += `<br>Edge: ${config.edgeStrength > 0 ? '+' : ''}${config.edgeStrength}%`;
         }
+
+        // Pre-processing display
+        if (config.preProcess) {
+            const p = config.preProcess;
+            const parts = [];
+            if (p.r !== 0) parts.push(`R:${p.r > 0 ? '+' : ''}${p.r}`);
+            if (p.g !== 0) parts.push(`G:${p.g > 0 ? '+' : ''}${p.g}`);
+            if (p.b !== 0) parts.push(`B:${p.b > 0 ? '+' : ''}${p.b}`);
+            if (p.brightness !== 0) parts.push(`Bright:${p.brightness > 0 ? '+' : ''}${p.brightness}`);
+            if (p.contrast !== 0) parts.push(`Cont:${p.contrast > 0 ? '+' : ''}${p.contrast}`);
+            if (p.saturation !== 0) parts.push(`Sat:${p.saturation > 0 ? '+' : ''}${p.saturation}`);
+            if (p.gamma !== 1.0) parts.push(`Gam:${p.gamma}`);
+
+            if (parts.length > 0) {
+                text += `<br><span style="color:#89b4fa">Pre: ${parts.join(' ')}</span>`;
+            }
+        }
         return text;
     }
 
@@ -144,8 +161,20 @@ CRT.ui.ComparisonView = class {
             if (newConfig.type === 'weighted') {
                 const w1 = item.config.weights;
                 const w2 = newConfig.weights;
-                return w1.h === w2.h && w1.s === w2.s && w1.v === w2.v;
+                if (w1.h !== w2.h || w1.s !== w2.s || w1.v !== w2.v) return false;
             }
+
+            // Check pre-processing
+            const p1 = item.config.preProcess || { r: 0, g: 0, b: 0, brightness: 0, contrast: 0, saturation: 0, gamma: 1.0 };
+            const p2 = newConfig.preProcess || { r: 0, g: 0, b: 0, brightness: 0, contrast: 0, saturation: 0, gamma: 1.0 };
+
+            if (p1.r !== p2.r) return false;
+            if (p1.g !== p2.g) return false;
+            if (p1.b !== p2.b) return false;
+            if (p1.brightness !== p2.brightness) return false;
+            if (p1.contrast !== p2.contrast) return false;
+            if ((p1.saturation || 0) !== (p2.saturation || 0)) return false;
+            if ((p1.gamma || 1.0) !== (p2.gamma || 1.0)) return false;
 
             return true;
         });
