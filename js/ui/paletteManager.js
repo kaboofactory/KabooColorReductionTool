@@ -3,6 +3,9 @@ CRT.ui.PaletteManager = class {
         this.container = document.getElementById(elementId);
         this.addBtn = document.getElementById(addBtnId);
         this.input = document.getElementById(inputId);
+        this.colorContainer = document.getElementById('palette-colors');
+        this.saveBtn = document.getElementById('save-palette-btn');
+        this.deleteCheckbox = document.getElementById('enable-palette-delete');
         this.palettes = []; // Array of { id, name, colors: [], img: HTMLImageElement }
 
         this.init();
@@ -11,6 +14,8 @@ CRT.ui.PaletteManager = class {
     init() {
         this.addBtn.addEventListener('click', () => this.input.click());
         this.input.addEventListener('change', (e) => this.handleFiles(e.target.files));
+        this.saveBtn.addEventListener('click', () => this.savePalette());
+        this.deleteCheckbox.addEventListener('change', () => this.renderColors());
 
         // Drag and Drop for Palette Image
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -37,6 +42,9 @@ CRT.ui.PaletteManager = class {
             const files = dt.files;
             this.handleFiles(files);
         }, false);
+
+        // Initialize visibility
+        this.renderColors();
     }
 
     async handleFiles(files) {
@@ -64,18 +72,38 @@ CRT.ui.PaletteManager = class {
         }
 
         this.render();
+        this.renderColors();
         this.input.value = ''; // Reset input
     }
 
     removePalette(id) {
         this.palettes = this.palettes.filter(p => p.id !== id);
         this.render();
+        this.renderColors();
+    }
+
+    removeColor(index) {
+        if (!this.deleteCheckbox.checked) return;
+        if (this.palettes.length === 0) return;
+
+        const palette = this.palettes[0];
+
+        if (palette.colors.length <= 2) {
+            alert("Cannot reduce palette to less than 2 colors.");
+            return;
+        }
+
+        palette.colors.splice(index, 1);
+        this.renderColors();
+
+        // Update the palette item info (color count)
+        this.render();
     }
 
     render() {
         this.container.innerHTML = '';
         if (this.palettes.length === 0) {
-            this.container.innerHTML = '<div class="empty-state">No palettes loaded</div>';
+            this.container.innerHTML = '<div class="empty-state">No palettes loaded (Please prepare a palette image(*.png, *.jpg) from LOSPEC etc.)</div>';
             return;
         }
 
@@ -117,6 +145,71 @@ CRT.ui.PaletteManager = class {
             el.appendChild(delBtn);
             this.container.appendChild(el);
         });
+    }
+
+    renderColors() {
+        this.colorContainer.innerHTML = '';
+
+        if (this.palettes.length === 0) {
+            this.saveBtn.style.display = 'none';
+            if (this.deleteCheckbox && this.deleteCheckbox.parentElement) {
+                this.deleteCheckbox.parentElement.style.display = 'none';
+            }
+            return;
+        }
+
+        this.saveBtn.style.display = 'block';
+        if (this.deleteCheckbox && this.deleteCheckbox.parentElement) {
+            this.deleteCheckbox.parentElement.style.display = 'flex';
+        }
+
+        const colors = this.palettes[0].colors;
+        const canDelete = this.deleteCheckbox.checked;
+
+        colors.forEach((c, index) => {
+            const el = document.createElement('div');
+            el.style.width = '16px';
+            el.style.height = '16px';
+            el.style.backgroundColor = `rgba(${c.r},${c.g},${c.b},${c.a / 255})`;
+            el.style.border = '1px solid #555';
+            el.style.cursor = canDelete ? 'pointer' : 'default';
+            el.title = `R:${c.r} G:${c.g} B:${c.b} A:${c.a}`;
+
+            if (c.a < 255) {
+                el.style.backgroundImage = 'linear-gradient(45deg, #888 25%, transparent 25%), linear-gradient(-45deg, #888 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #888 75%), linear-gradient(-45deg, transparent 75%, #888 75%)';
+                el.style.backgroundSize = '8px 8px';
+                el.style.backgroundPosition = '0 0, 0 4px, 4px -4px, -4px 0px';
+            }
+
+            el.onclick = () => {
+                if (canDelete) {
+                    this.removeColor(index);
+                }
+            };
+
+            this.colorContainer.appendChild(el);
+        });
+    }
+
+    savePalette() {
+        if (this.palettes.length === 0) return;
+        const colors = this.palettes[0].colors;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = colors.length * 8;
+        canvas.height = 8;
+        const ctx = canvas.getContext('2d');
+
+        colors.forEach((c, i) => {
+            ctx.fillStyle = `rgba(${c.r},${c.g},${c.b},${c.a / 255})`;
+            ctx.clearRect(i * 8, 0, 8, 8); // Clear first to handle transparency
+            ctx.fillRect(i * 8, 0, 8, 8);
+        });
+
+        const link = document.createElement('a');
+        link.download = `palette_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
     }
 
     getAllPalettes() {

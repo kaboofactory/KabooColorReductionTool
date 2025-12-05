@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaboo Color Reduction Tool - Help</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1 {
+            border-bottom: 2px solid #89b4fa;
+            padding-bottom: 10px;
+            color: #1e1e2e;
+        }
+
+        h2 {
+            margin-top: 30px;
+            color: #45475a;
+            background-color: #e6e9ef;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .lang-block {
+            margin-bottom: 20px;
+        }
+
+        .en {
+            margin-bottom: 10px;
+        }
+
+        .jp {
+            color: #555;
+            font-size: 0.95em;
+            border-left: 3px solid #89b4fa;
+            padding-left: 10px;
+        }
+
+        code {
+            background-color: #eee;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .note {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Kaboo Color Reduction Tool - Help / ヘルプ</h1>
+
+    <div class="section">
+        <h2>1. Introduction / はじめに</h2>
+        <div class="lang-block">
+            <div class="en">
+                This tool allows you to reduce the colors of an image using various algorithms and a custom palette. It
+                is designed for pixel art creation and retro-style graphics.
+            </div>
+            <div class="jp">
+                このツールは、様々なアルゴリズムとカスタムパレットを使用して、画像の減色を行うことができます。ピクセルアートの作成やレトロスタイルのグラフィック制作向けに設計されています。
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>2. Loading Source Image / 元画像の読み込み</h2>
+        <div class="lang-block">
+            <div class="en">
+                <strong>Load Source Image:</strong> Click this button to select the image you want to process (PNG or
+                JPG). The image will be displayed in the main area. You can zoom in/out using the slider (or mouse
+                wheel).
+            </div>
+            <div class="jp">
+                <strong>Load Source Image:</strong>
+                このボタンをクリックして、処理したい画像（PNGまたはJPG）を選択します。画像はメインエリアに表示されます。スライダー(またはマウスのホイール)を使って拡大/縮小が可能です。
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>3. Palette Management / パレット管理</h2>
+        <div class="lang-block">
+            <div class="en">
+                <strong>Set Palette Image:</strong> Click this button to load a palette image (PNG or JPG).
+                Unique colors will be extracted from the image (up to 1024 colors). You can create this image
+                yourself or obtain it from sources like LOSPEC.
+            </div>
+            <div class="jp">
+                <strong>Set Palette Image:</strong>
+                このボタンをクリックしてパレット画像（PNGまたはJPG）を読み込みます。画像からユニークな色が抽出されます(最大1024色)。この画像は、自分で作成するか、LOSPECなどから入手することができます。
+            </div>
+            <img src="./img/palette.png" alt="Palette image sample">
+        </div>
+        <div class="lang-block">
+            <div class="en">
+                <strong>Enable Color Deletion:</strong>To remove individual colors from the palette, check this
+                checkbox.
+                You can delete colors by clicking on the color chip.
+            </div>
+            <div class="jp">
+                <strong>Enable Color Deletion:</strong> パレットから個別の色を削除するには、このチェックボックスをオンにします。カラーチップをクリックすると削除できます。
+            </div>
+        </div>
+        <div class="lang-block">
+            <div class="en">
+                <strong>Save the current palette:</strong> You can save the current palette as a palette image.
+            </div>
+            <div class="jp">
+                <strong>Save the current palette:</strong> 現在のパレットをパレット画像として保存できます。
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>4. Pre-color reduction processing / 減色前処理</h2>
+        <div class="lang-block">
+            <div class="en">
+                <strong>Enable Pre-processing:</strong> Check this to apply color adjustments (RGB, Brightness,
+                Contrast, etc.) to the source image <em>before</em> color reduction. This helps in tweaking the image to
+                better fit the palette.
+            </div>
+            <div class="jp">
+                <strong>Enable Pre-processing:</strong>
+                減色処理の前に、元画像に対して色調整（RGB、明るさ、コントラストなど）を適用するには、これをチェックします。パレットに合わせて画像を微調整するのに役立ちます。
+            </div>
+            <img src="./img/help.png" alt="Pre-color reduction processing, Edge processing, Color reduction">
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>5. Algorithm Type / アルゴリズムタイプ</h2>
+        <div class="lang-block">
+            <div class="en">
+                Select the method used to map image colors to the palette:
+                <ul>
+                    <li><strong>Nearest Neighbor:</strong> Simple Euclidean distance matching. Fast but can be noisy.
+                    </li>
+                    <li><strong>Luma Weighted:</strong> Matches colors based on perceived brightness (Luma). Good for
+                        grayscale or preserving lightness.</li>
+                    <li><strong>Perceptual (CIELAB):</strong> Matches colors in the CIELAB color space. Closest to human
+                        vision.</li>
+                    <li><strong>Weighted (HSV):</strong> Allows you to customize the importance of Hue, Saturation, and
+                        Value.</li>
+                </ul>
+            </div>
+            <div class="jp">
+                画像の色をパレットにマッピングする方法を選択します：
+                <ul>
+                    <li><strong>Nearest Neighbor:</strong> 単純なユークリッド距離でのマッチング。高速ですがノイズが多くなることがあります。</li>
+                    <li><strong>Luma Weighted:</strong> 輝度（Luma）に基づいて色をマッチングします。グレースケールや明度を保持したい場合に適しています。</li>
+                    <li><strong>Perceptual (CIELAB):</strong> CIELAB色空間でマッチングを行います。人間の視覚に最も近いです。</li>
+                    <li><strong>Weighted (HSV):</strong> 色相(Hue)、彩度(Saturation)、明度(Value)の重要度をカスタマイズできます。</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>6. Edge processing / エッジ処理</h2>
+        <div class="lang-block">
+            <div class="en">
+                Apply effects to edges detected in the image to enhance outlines or add details.
+            </div>
+            <div class="jp">
+                画像内で検出されたエッジに対して効果を適用し、輪郭を強調したりディテールを追加したりします。
+            </div>
+        </div>
+        <div class="lang-block">
+            <div class="en">
+                <strong>Force Edge (Alpha):</strong> Forces pixels with opacity within the specified range to be treated
+                as edges.
+            </div>
+            <div class="jp">
+                <strong>Force Edge (Alpha):</strong> 透明度が指定範囲内のピクセルを強制的にエッジとして処理します。
+            </div>
+        </div>
+        <div class="lang-block">
+            <div class="en">
+                <strong>Edge Algorithm:</strong> Select the edge detection algorithm
+                (Sobel, Prewitt, Roberts, Laplacian). You can adjust the threshold. In addition, you can adjust the
+                slider to prioritize "brightness" or "hue" in Hue Prio.
+            </div>
+            <div class="jp">
+                <strong>Edge Algorithm:</strong> エッジ検出アルゴリズム（Sobel、Prewitt、Roberts、Laplacian）を選択します。閾値を調整できます。また、Hue
+                Prioで"輝度"または"色相"を優先するように調整できます。
+            </div>
+        </div>
+        <div class="lang-block">
+            <div class="en">
+                <strong>Edge Adjustments:</strong> Specify the processing content for dots identified as edges.
+            </div>
+            <div class="jp">
+                <strong>Edge Adjustments:</strong> エッジと判定されたドットに対する処理内容を指定します。
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>7. Comparison & Saving / 比較と保存</h2>
+        <div class="lang-block">
+            <div class="en">
+                <strong>Add to Comparison:</strong> The image will be processed and added to the grid. Click on the
+                resulting image for a detailed view or to save it. You can also see which dots were treated as edges.
+            </div>
+            <div class="jp">
+                <strong>Add to Comparison:</strong>
+                画像が処理されグリッドに追加されます。結果の画像をクリックすると、詳細表示や保存が可能です。どのドットがエッジとして処理されたのかも確認することができます。
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>8. Disclaimer / 免責事項</h2>
+        <div class="lang-block">
+            <div class="en">
+                This software is provided "as is", without warranty of any kind. The author is not liable for any
+                damages arising from its use.
+            </div>
+            <div class="jp">
+                本ソフトウェアは「現状のまま」提供され、いかなる保証もありません。著者は、本ソフトウェアの使用から生じるいかなる損害についても責任を負いません。
+            </div>
+        </div>
+        <div class="note">
+            <div class="en">
+                <strong>Note:</strong> This help page was written by Antigravity doing their best, so please forgive any
+                small mistakes.
+            </div>
+            <div class="jp">
+                <strong>Note:</strong> このヘルプページはAntigravityくんが頑張って書いてくれたんや、ちょっとぐらい間違ってても許したってな
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

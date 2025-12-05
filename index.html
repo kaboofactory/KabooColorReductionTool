@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Color Reduction Tool</title>
+    <title>Kaboo Color Reduction Tool</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,27 +13,45 @@
 
 <body>
     <div id="app">
-        <header class="app-header">
-            <h1>Color Reduction Tool</h1>
+        <header class="app-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>Kaboo Color Reduction Tool</h1>
+            <a href="help.html" target="_blank" class="btn secondary small" style="text-decoration: none;">Help /
+                ヘルプ</a>
         </header>
         <main class="app-main">
             <aside class="sidebar">
                 <section id="palette-manager" class="panel">
                     <h2>Palettes</h2>
                     <div id="palette-list" class="palette-list">
-                        <!-- Palette items will be injected here -->
-                        <div class="empty-state">No palettes loaded</div>
+                        <div class="empty-state">No palettes loaded (Please prepare a palette image(*.png, *.jpg) from
+                            LOSPEC etc.)</div>
                     </div>
                     <input type="file" id="palette-input" accept="image/png, image/jpeg" hidden>
-                    <button id="add-palette-btn" class="btn primary">Add Palette Image</button>
+                    <button id="add-palette-btn" class="btn primary">Set Palette Image</button>
+                    <div style="margin-top:10px; display:flex; align-items:center; gap:5px;">
+                        <input type="checkbox" id="enable-palette-delete">
+                        <label for="enable-palette-delete" style="font-size:0.8rem; color:#ccc; user-select:none">Enable
+                            Color Deletion</label>
+                    </div>
+                    <div id="palette-colors" class="palette-colors"
+                        style="display:flex; flex-wrap:wrap; gap:2px; margin-top:5px; min-height:20px;"></div>
+                    <button id="save-palette-btn" class="btn secondary"
+                        style="margin-top:10px; width:100%; display:none;">Save the current palette</button>
                 </section>
+
                 <section id="algorithm-selector" class="panel">
-                    <h2>Algorithms</h2>
+                    <h2>Image Processing</h2>
 
                     <!-- Pre-processing Controls -->
-                    <div class="control-group">
-                        <h3>Pre-color reduction processing</h3>
+                    <details class="control-group">
+                        <summary>
+                            <h4>Pre-color reduction processing</h4>
+                        </summary>
                         <div class="sub-group">
+                            <div class="checkbox-row" style="margin-bottom: 5px;">
+                                <input type="checkbox" id="pre-proc-enable">
+                                <label for="pre-proc-enable">Enable Pre-processing</label>
+                            </div>
                             <label>RGB Adjustment (-255 to 255)</label>
                             <div class="slider-row">
                                 <label for="pre-r">R</label>
@@ -78,11 +96,11 @@
                             </div>
                         </div>
                         <button id="pre-reset-btn" class="btn secondary small">Reset Pre-processing</button>
-                    </div>
+                    </details>
                     <hr class="separator">
 
                     <div class="control-group">
-                        <label>Algorithm Type</label>
+                        <h4>Algorithm Type (Required)</h4>
                         <select id="algo-type">
                             <option value="nearest">Nearest Neighbor (RGB)</option>
                             <option value="luma">Luma Weighted</option>
@@ -93,25 +111,100 @@
                     <div id="algo-params" class="params-container">
                         <!-- Dynamic parameters -->
                     </div>
-                    <div id="edge-adjust-group" class="control-group">
-                        <label>Edge Adjustment</label>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="edge-adjust-enable">
-                            <label for="edge-adjust-enable">Enable Edge Brightness</label>
+                    <hr class="separator">
+
+                    <details id="edge-post-proc-group" class="control-group">
+                        <summary>
+                            <h4>Edge processing</h4>
+                        </summary>
+
+                        <!-- 2. Force Edge (Alpha) -->
+                        <div class="sub-group">
+                            <div class="checkbox-row">
+                                <input type="checkbox" id="force-edge-enable">
+                                <label for="force-edge-enable">Force Edge (Alpha)</label>
+                            </div>
+                            <div class="slider-row">
+                                <label for="force-edge-threshold">Min</label>
+                                <input type="range" id="force-edge-threshold" min="0" max="255" value="32">
+                                <span id="force-edge-threshold-val">32</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="force-edge-threshold-max">Max</label>
+                                <input type="range" id="force-edge-threshold-max" min="0" max="255" value="254">
+                                <span id="force-edge-threshold-max-val">254</span>
+                            </div>
                         </div>
-                        <input type="range" id="edge-strength" min="-100" max="100" value="0" disabled>
-                        <span id="edge-strength-val">0%</span>
+
+                        <!-- 3. Algorithm Selection -->
+                        <div class="sub-group">
+                            <div class="checkbox-row">
+                                <input type="checkbox" id="edge-algo-enable">
+                                <label for="edge-algo-enable">Edge Algorithm</label>
+                            </div>
+                            <select id="edge-algo-type" style="width:100%; margin-bottom:5px">
+                                <option value="sobel">Sobel Operator</option>
+                                <option value="prewitt">Prewitt Operator</option>
+                                <option value="scharr">Scharr Operator (Modern)</option>
+                                <option value="roberts">Roberts Cross</option>
+                                <option value="morphological">Morphological Gradient</option>
+                                <option value="laplacian">Laplacian</option>
+                            </select>
+                            <div class="slider-row">
+                                <label for="edge-algo-threshold">Thr</label>
+                                <input type="range" id="edge-algo-threshold" min="0" max="255" value="30">
+                                <span id="edge-algo-threshold-val">30</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="edge-algo-hue-priority" style="width:60px">Hue Prio</label>
+                                <input type="range" id="edge-algo-hue-priority" min="0" max="100" value="0">
+                                <span id="edge-algo-hue-priority-val">0%</span>
+                            </div>
+                        </div>
+
+                        <!-- 4. Edge Processing Parameters -->
+                        <div class="sub-group">
+                            <label>Edge Adjustments</label>
+                            <div class="slider-row">
+                                <label for="edge-proc-brightness">Bri</label>
+                                <input type="range" id="edge-proc-brightness" min="-255" max="255" value="-50">
+                                <span id="edge-proc-brightness-val">-50</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="edge-proc-contrast">Con</label>
+                                <input type="range" id="edge-proc-contrast" min="-255" max="255" value="0">
+                                <span id="edge-proc-contrast-val">0</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="edge-proc-saturation">Sat</label>
+                                <input type="range" id="edge-proc-saturation" min="-100" max="100" value="0">
+                                <span id="edge-proc-saturation-val">0</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="edge-proc-hue">Hue</label>
+                                <input type="range" id="edge-proc-hue" min="-180" max="180" value="0">
+                                <span id="edge-proc-hue-val">0</span>
+                            </div>
+                            <button id="edge-proc-reset-btn" class="btn secondary small"
+                                style="margin-top:5px; width:100%">Reset Adjustments</button>
+                        </div>
+                    </details>
+                    <hr class="separator">
+
+                    <div class="control-group">
+                        <h4>Comparison</h4>
+                        <button id="apply-algo-btn" class="btn primary">Add to Comparison</button>
                     </div>
-                    <button id="apply-algo-btn" class="btn primary">Add to Comparison</button>
                 </section>
             </aside>
             <section class="content-area">
                 <div class="toolbar">
                     <input type="file" id="source-image-input" accept="image/png, image/jpeg" hidden>
                     <button id="load-image-btn" class="btn secondary">Load Source Image</button>
+                    <button id="clear-comparison-btn" class="btn secondary" disabled>Clear</button>
                     <div style="display:flex; align-items:center; gap:10px; margin-left:auto">
                         <label for="zoom-slider" style="font-size:0.9rem">Zoom</label>
-                        <input type="range" id="zoom-slider" min="10" max="1000" value="30" style="width:200px">
+                        <input type="range" id="zoom-slider" min="10" max="1000" value="100" style="width:200px">
                         <span id="zoom-val" style="font-size:0.8rem; width:35px">100%</span>
                     </div>
                 </div>

@@ -2,19 +2,25 @@ document.addEventListener('DOMContentLoaded', () => {
     class App {
         constructor() {
             this.paletteManager = new CRT.ui.PaletteManager('palette-list', 'add-palette-btn', 'palette-input');
-            this.algoSelector = new CRT.ui.AlgorithmSelector('algo-type', 'algo-params', 'edge-adjust-enable', 'edge-strength', 'edge-strength-val', 'edge-adjust-group');
-            this.comparisonView = new CRT.ui.ComparisonView('comparison-grid', (id) => this.handleItemSelect(id));
+            // Updated constructor signature for AlgorithmSelector
+            this.algoSelector = new CRT.ui.AlgorithmSelector('algo-type', 'algo-params');
+            this.comparisonView = new CRT.ui.ComparisonView(
+                'comparison-grid',
+                (id) => this.handleItemSelect(id),
+                (items) => this.handleComparisonUpdate(items)
+            );
             this.detailView = new CRT.ui.DetailView();
 
             this.sourceImage = null;
             this.sourceImageData = null;
-            this.sourceEdges = null;
+            // this.sourceEdges is no longer stored here; calculated dynamically in applyAlgorithm
 
             this.init();
         }
 
         init() {
             const loadBtn = document.getElementById('load-image-btn');
+            const clearBtn = document.getElementById('clear-comparison-btn');
             const input = document.getElementById('source-image-input');
             const applyBtn = document.getElementById('apply-algo-btn');
             const zoomSlider = document.getElementById('zoom-slider');
@@ -26,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.loadSourceImage(e.target.files[0]);
                 e.target.value = '';
             });
+            clearBtn.addEventListener('click', () => this.comparisonView.clearProcessed());
             applyBtn.addEventListener('click', () => this.applyAlgorithm());
 
             zoomSlider.addEventListener('input', (e) => {
@@ -33,6 +40,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 zoomVal.textContent = `${val}%`;
                 this.comparisonView.setZoom(val);
             });
+
+            // Mouse Wheel Zoom
+            const grid = document.getElementById('comparison-grid');
+            grid.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                let currentZoom = parseInt(zoomSlider.value, 10);
+                let newZoom = currentZoom;
+
+                if (e.deltaY < 0) {
+                    // Zoom In
+                    if (currentZoom < 200) {
+                        newZoom += 10;
+                    } else {
+                        newZoom += 50;
+                    }
+                } else {
+                    // Zoom Out
+                    if (currentZoom <= 200) {
+                        newZoom -= 10;
+                    } else {
+                        newZoom -= 50;
+                    }
+                }
+
+                // Clamp
+                newZoom = Math.max(parseInt(zoomSlider.min), Math.min(parseInt(zoomSlider.max), newZoom));
+
+                if (newZoom !== currentZoom) {
+                    zoomSlider.value = newZoom;
+                    zoomVal.textContent = `${newZoom}%`;
+                    this.comparisonView.setZoom(newZoom);
+                }
+            }, { passive: false });
 
             // Drag and Drop for Source Image
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -69,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 this.sourceImage = await CRT.core.loadImage(file);
                 this.sourceImageData = CRT.core.getImageData(this.sourceImage);
-                this.sourceEdges = CRT.core.detectEdges(this.sourceImageData);
+                // Edges are calculated dynamically during reduction
 
                 this.comparisonView.clear();
                 // Add original to comparison
@@ -108,21 +148,35 @@ document.addEventListener('DOMContentLoaded', () => {
                         this.sourceImageData.height
                     );
 
-                    // Apply Pre-processing
-                    if (config.preProcess) {
+                    // 1. Apply Pre-processing
+                    if (config.preProcess && config.preProcess.enabled) {
                         CRT.core.applyPreProcessing(sourceCopy, config.preProcess);
                     }
 
-                    // If edge adjustment is enabled, we might need to re-calculate edges based on the pre-processed image
-                    // because contrast/brightness changes affect edge magnitudes.
-                    let edgesToUse = this.sourceEdges;
-                    if (config.edgeEnabled) {
-                        // Re-calculate edges for the pre-processed image
-                        edgesToUse = CRT.core.detectEdges(sourceCopy);
+                    // 2. Apply Edge Post-processing (before reduction)
+                    // We calculate edges on the pre-processed image
+                    let edges = null;
+                    let edgeImageData = null;
+                    if (config.edge && config.edge.enabled) {
+                        if (config.edge.algorithmEnabled) {
+                            edges = CRT.core.detectEdges(sourceCopy, config.edge.algorithm, (config.edge.huePriority || 0) / 100);
+                        }
+                        // Generate visualization BEFORE applying processing (so we see what was detected)
+                        // Or AFTER? The detection is what matters.
+                        edgeImageData = CRT.core.createEdgeVisualization(sourceCopy, edges, config.edge);
+
+                        CRT.core.applyEdgeProcessing(sourceCopy, edges, config.edge);
                     }
 
-                    const resultData = CRT.core.reduceImage(sourceCopy, palette, edgesToUse, config);
-                    this.comparisonView.addItem(resultData, config, 'Reduced');
+                    // 3. Apply Color Reduction
+                    // We pass edgeStrength: 0 because we handled edge processing manually above
+                    const reducerOptions = {
+                        ...config,
+                        edgeStrength: 0
+                    };
+
+                    const resultData = CRT.core.reduceImage(sourceCopy, palette, edges, reducerOptions);
+                    this.comparisonView.addItem(resultData, config, 'Reduced', edgeImageData);
                 } catch (err) {
                     console.error('Reduction failed:', err);
                     alert('Reduction failed: ' + err.message);
@@ -135,8 +189,15 @@ document.addEventListener('DOMContentLoaded', () => {
         handleItemSelect(id) {
             const item = this.comparisonView.getItem(id);
             if (item) {
-                this.detailView.show(item.imageData);
+                this.detailView.show(item.imageData, item.edgeImageData);
             }
+        }
+
+        handleComparisonUpdate(items) {
+            const clearBtn = document.getElementById('clear-comparison-btn');
+            // Enable if there are any items with config (processed images)
+            const hasProcessed = items.some(item => item.config);
+            clearBtn.disabled = !hasProcessed;
         }
     }
 

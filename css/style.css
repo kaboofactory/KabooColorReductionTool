@@ -237,6 +237,201 @@ input[type="number"] {
 }
 
 .slider-row span {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.sidebar {
+    width: 300px;
+    background-color: var(--panel-bg);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    gap: 1rem;
+    overflow-y: auto;
+}
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.panel:last-child {
+    border-bottom: none;
+}
+
+.panel h2 {
+    font-size: 1rem;
+    color: var(--accent-color);
+}
+
+.content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    gap: 1rem;
+    overflow: hidden;
+}
+
+.toolbar {
+    display: flex;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.grid-view {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 1rem;
+    overflow-y: auto;
+    height: 100%;
+    padding-right: 0.5rem;
+}
+
+/* Components */
+.btn {
+    padding: 0.6rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    font-family: inherit;
+}
+
+.btn.primary {
+    background-color: var(--accent-color);
+    color: var(--bg-color);
+}
+
+.btn.primary:hover {
+    background-color: var(--accent-hover);
+}
+
+.btn.secondary {
+    background-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.btn.secondary:hover {
+    background-color: #585b70;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.control-group label {
+    font-size: 0.9rem;
+    color: #a6adc8;
+}
+
+select,
+input[type="text"],
+input[type="number"] {
+    padding: 0.5rem;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-color);
+    font-family: inherit;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.empty-state {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: #585b70;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #585b70;
+}
+
+/* Drag and Drop Visual Feedback */
+.drag-over {
+    border: 2px dashed var(--accent-color) !important;
+    background-color: rgba(137, 180, 250, 0.1) !important;
+    position: relative;
+}
+
+.drag-over::after {
+    content: 'Drop file here';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--accent-color);
+    font-size: 1.2rem;
+    font-weight: 600;
+    pointer-events: none;
+    background-color: rgba(30, 30, 46, 0.8);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    z-index: 100;
+}
+
+/* Pre-processing UI */
+.sub-group {
+    margin-bottom: 10px;
+    padding-left: 10px;
+    border-left: 2px solid #eee;
+}
+
+.slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.slider-row label {
+    font-size: 0.85rem;
+    width: 40px;
+    /* Fixed width for labels */
+    margin-bottom: 0;
+}
+
+.slider-row input[type="range"] {
+    flex: 1;
+}
+
+.slider-row span {
     font-size: 0.8rem;
     width: 35px;
     text-align: right;
@@ -245,4 +440,54 @@ input[type="number"] {
 .btn.small {
     padding: 4px 8px;
     font-size: 0.8rem;
+}
+
+/* Collapsible Sections */
+details {
+    margin-bottom: 10px;
+}
+
+summary {
+    cursor: pointer;
+    user-select: none;
+    outline: none;
+    list-style: none;
+    /* Remove default marker */
+}
+
+summary::-webkit-details-marker {
+    display: none;
+    /* Remove default marker in WebKit */
+}
+
+summary h4 {
+    display: inline-block;
+    margin: 0;
+    font-size: 1rem;
+    color: var(--text-color);
+}
+
+summary::after {
+    content: '+';
+    float: right;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+details[open] summary::after {
+    content: '-';
+}
+
+details[open] .sub-group {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }

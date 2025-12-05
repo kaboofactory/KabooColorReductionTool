@@ -123,7 +123,7 @@ CRT.core.reduceImage = function (sourceData, palette, edges, options) {
         const b = sData[idx + 2];
         const a = sData[idx + 3];
 
-        if (a === 0) {
+        if (a < 32) {
             dData[idx] = 0;
             dData[idx + 1] = 0;
             dData[idx + 2] = 0;
