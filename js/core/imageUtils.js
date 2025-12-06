@@ -361,11 +361,53 @@ CRT.core.applyEdgeProcessing = function (imageData, edgeMap, config) {
         const a = data[idx + 3];
 
         // Determine if this pixel is an "edge"
+        // Check if either Force Edge (Range) or Outline is enabled
         let isEdge = false;
+        const forceRangeEnabled = config.forceEdge.enabled;
+        const outlineConfig = config.forceEdge.outline;
+        const outlineEnabled = outlineConfig && outlineConfig.enabled;
 
-        if (forceEnabled && a >= forceThrMin && a <= forceThrMax) {
-            isEdge = true;
-        } else if (algoEnabled && edgeMap && edgeMap[i] > algoThr) {
+        if (forceRangeEnabled || outlineEnabled) {
+            // 1. Standard Force Edge (Alpha Range)
+            if (forceRangeEnabled) {
+                if (a >= forceThrMin && a <= forceThrMax) {
+                    isEdge = true;
+                }
+            }
+
+            // 2. Outline Detection (Check adjacent transparency)
+            if (!isEdge && outlineEnabled) {
+                const outline = outlineConfig;
+                // Target pixel must meet the Opacity Threshold
+                if (a >= outline.opacityMin) {
+                    const nMax = outline.neighborMax;
+                    const pxX = i % width;
+                    const pxY = Math.floor(i / width);
+
+                    // Neighbors: Up, Down, Left, Right
+                    const offsets = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+
+                    for (const [dx, dy] of offsets) {
+                        const nx = pxX + dx;
+                        const ny = pxY + dy;
+                        let nA = 0; // Assume transparent if out of bounds (edge of canvas)
+
+                        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                            const nIdx = (ny * width + nx) * 4;
+                            nA = data[nIdx + 3];
+                        }
+
+                        // If any neighbor is "transparent enough", mark as edge
+                        if (nA <= nMax) {
+                            isEdge = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!isEdge && algoEnabled && edgeMap && edgeMap[i] > algoThr) {
             isEdge = true;
         }
 
@@ -556,8 +598,41 @@ CRT.core.createEdgeVisualization = function (sourceData, edgeMap, config) {
         let isForceEdge = false;
         let isAlgoEdge = false;
 
-        if (forceEnabled && a >= forceThrMin && a <= forceThrMax) {
-            isForceEdge = true;
+        const forceRangeEnabled = config.forceEdge.enabled;
+        const outlineConfig = config.forceEdge.outline;
+        const outlineEnabled = outlineConfig && outlineConfig.enabled;
+
+        if (forceRangeEnabled || outlineEnabled) {
+            if (forceRangeEnabled && a >= forceThrMin && a <= forceThrMax) {
+                isForceEdge = true;
+            }
+
+            // Outline Detection Visualization
+            if (!isForceEdge && outlineEnabled) {
+                const outline = outlineConfig;
+                if (a >= outline.opacityMin) {
+                    const nMax = outline.neighborMax;
+                    const pxX = i % width;
+                    const pxY = Math.floor(i / width);
+                    const offsets = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+
+                    for (const [dx, dy] of offsets) {
+                        const nx = pxX + dx;
+                        const ny = pxY + dy;
+                        let nA = 0;
+
+                        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                            const nIdx = (ny * width + nx) * 4;
+                            nA = sData[nIdx + 3];
+                        }
+
+                        if (nA <= nMax) {
+                            isForceEdge = true;
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         if (algoEnabled && edgeMap && edgeMap[i] > algoThr) {

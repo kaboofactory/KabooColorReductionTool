@@ -150,6 +150,9 @@ CRT.ui.ComparisonView = class {
             if (config.edge.forceEdge && config.edge.forceEdge.enabled) {
                 text += ` + Force(${config.edge.forceEdge.thresholdMin}-${config.edge.forceEdge.thresholdMax})`;
             }
+            if (config.edge.forceEdge.outline && config.edge.forceEdge.outline.enabled) {
+                text += ` + Outline(Op:${config.edge.forceEdge.outline.opacityMin}, Nb:${config.edge.forceEdge.outline.neighborMax})`;
+            }
 
             const adj = config.edge.adjustments;
             if (adj.brightness !== 0) text += ` B:${adj.brightness}`;
@@ -225,6 +228,16 @@ CRT.ui.ComparisonView = class {
                 if (e1.forceEdge.enabled) {
                     if (e1.forceEdge.thresholdMin !== e2.forceEdge.thresholdMin) return false;
                     if (e1.forceEdge.thresholdMax !== e2.forceEdge.thresholdMax) return false;
+                }
+
+                const o1 = e1.forceEdge.outline;
+                const o2 = e2.forceEdge.outline;
+                const o1En = o1 ? o1.enabled : false;
+                const o2En = o2 ? o2.enabled : false;
+                if (o1En !== o2En) return false;
+                if (o1En) {
+                    if (o1.opacityMin !== o2.opacityMin) return false;
+                    if (o1.neighborMax !== o2.neighborMax) return false;
                 }
 
                 if (e1.algorithmEnabled !== e2.algorithmEnabled) return false;

@@ -202,6 +202,17 @@
         </div>
         <div class="lang-block">
             <div class="en">
+                <strong>Outline Detection:</strong> Detect outlines. For pixels with an opacity greater than or equal to
+                Opacity Thr, they are treated as an outline if there are adjacent pixels with an opacity less than or
+                equal to Alpha Thr.
+            </div>
+            <div class="jp">
+                <strong>Outline Detection:</strong> アウトラインを検出します。透明度がOpacity Thr以上のピクセルに対して、透明度がAlpha
+                Thr以下のピクセルが存在する場合にアウトラインとして処理します。
+            </div>
+        </div>
+        <div class="lang-block">
+            <div class="en">
                 <strong>Edge Algorithm:</strong> Select the edge detection algorithm
                 (Sobel, Prewitt, Roberts, Laplacian). You can adjust the threshold. In addition, you can adjust the
                 slider to prioritize "brightness" or "hue" in Hue Prio.

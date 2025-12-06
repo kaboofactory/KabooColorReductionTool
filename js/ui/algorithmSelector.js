@@ -12,6 +12,14 @@ CRT.ui.AlgorithmSelector = class {
         this.forceEdgeThresholdMax = document.getElementById('force-edge-threshold-max');
         this.forceEdgeThresholdMaxVal = document.getElementById('force-edge-threshold-max-val');
 
+        this.outlineEnable = document.getElementById('outline-enable');
+        this.outlineOpacityThr = document.getElementById('outline-opacity-thr');
+        this.outlineOpacityThrVal = document.getElementById('outline-opacity-thr-val');
+        this.outlineNeighborThr = document.getElementById('outline-neighbor-thr');
+        this.outlineNeighborThrVal = document.getElementById('outline-neighbor-thr-val');
+
+
+
         this.edgeAlgoEnable = document.getElementById('edge-algo-enable');
         this.edgeAlgoType = document.getElementById('edge-algo-type');
         this.edgeAlgoThreshold = document.getElementById('edge-algo-threshold');
@@ -98,6 +106,16 @@ CRT.ui.AlgorithmSelector = class {
             this.forceEdgeThresholdMaxVal.textContent = e.target.value;
         });
 
+        this.outlineEnable.addEventListener('change', () => this.toggleEdgeControls());
+        this.outlineOpacityThr.addEventListener('input', (e) => {
+            this.outlineOpacityThrVal.textContent = e.target.value;
+        });
+        this.outlineNeighborThr.addEventListener('input', (e) => {
+            this.outlineNeighborThrVal.textContent = e.target.value;
+        });
+
+
+
         this.edgeAlgoThreshold.addEventListener('input', (e) => {
             this.edgeAlgoThresholdVal.textContent = e.target.value;
         });
@@ -145,11 +163,16 @@ CRT.ui.AlgorithmSelector = class {
     toggleEdgeControls() {
         const forceEnabled = this.forceEdgeEnable.checked;
         const algoEnabled = this.edgeAlgoEnable.checked;
-        const anyEdgeEnabled = forceEnabled || algoEnabled;
+        const outlineEnabled = this.outlineEnable.checked;
+        const anyEdgeEnabled = forceEnabled || algoEnabled || outlineEnabled;
 
         // Force Edge Controls
         this.forceEdgeThreshold.disabled = !forceEnabled;
         this.forceEdgeThresholdMax.disabled = !forceEnabled;
+
+        // Outline Controls
+        this.outlineOpacityThr.disabled = !outlineEnabled;
+        this.outlineNeighborThr.disabled = !outlineEnabled;
 
         // Algo Controls
         this.edgeAlgoType.disabled = !algoEnabled;
@@ -225,11 +248,16 @@ CRT.ui.AlgorithmSelector = class {
             },
             // Edge Post-processing
             edge: {
-                enabled: this.forceEdgeEnable.checked || this.edgeAlgoEnable.checked,
+                enabled: this.forceEdgeEnable.checked || this.edgeAlgoEnable.checked || this.outlineEnable.checked,
                 forceEdge: {
                     enabled: this.forceEdgeEnable.checked,
                     thresholdMin: parseInt(this.forceEdgeThreshold.value, 10) || 32,
-                    thresholdMax: parseInt(this.forceEdgeThresholdMax.value, 10) || 254
+                    thresholdMax: parseInt(this.forceEdgeThresholdMax.value, 10) || 254,
+                    outline: {
+                        enabled: this.outlineEnable.checked,
+                        opacityMin: parseInt(this.outlineOpacityThr.value, 10) || 255,
+                        neighborMax: parseInt(this.outlineNeighborThr.value, 10) || 0
+                    }
                 },
                 algorithmEnabled: this.edgeAlgoEnable.checked,
                 algorithm: this.edgeAlgoType.value,
