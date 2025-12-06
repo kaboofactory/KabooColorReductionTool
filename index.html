@@ -28,6 +28,20 @@
                     </div>
                     <input type="file" id="palette-input" accept="image/png, image/jpeg" hidden>
                     <button id="add-palette-btn" class="btn primary">Set Palette Image</button>
+                    <div style="display:flex; flex-direction:column; gap:5px; margin-top:5px;">
+                        <div style="display:flex; gap:5px;">
+                            <button id="add-rgb232-btn" class="btn secondary"
+                                style="flex:1; font-size:0.8rem; padding:4px;">RGB232 Pal</button>
+                            <button id="add-rgb322-btn" class="btn secondary"
+                                style="flex:1; font-size:0.8rem; padding:4px;">RGB322 Pal</button>
+                        </div>
+                        <div style="display:flex; gap:5px;">
+                            <button id="add-rgb343-btn" class="btn secondary"
+                                style="flex:1; font-size:0.8rem; padding:4px;">RGB343 Pal</button>
+                            <button id="add-rgb433-btn" class="btn secondary"
+                                style="flex:1; font-size:0.8rem; padding:4px;">RGB433 Pal</button>
+                        </div>
+                    </div>
                     <div style="margin-top:10px; display:flex; align-items:center; gap:5px;">
                         <input type="checkbox" id="enable-palette-delete">
                         <label for="enable-palette-delete" style="font-size:0.8rem; color:#ccc; user-select:none">Enable
@@ -206,7 +220,8 @@
                                 <span id="edge-proc-hue-val">0</span>
                             </div>
                             <button id="edge-proc-reset-btn" class="btn secondary small"
-                                style="margin-top:5px; width:100%">Reset Adjustments</button>
+                                style="margin-top:5px; width:100%">Reset
+                                Adjustments</button>
                         </div>
                     </details>
                     <hr class="separator">

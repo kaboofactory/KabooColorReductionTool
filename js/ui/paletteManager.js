@@ -3,10 +3,16 @@ CRT.ui.PaletteManager = class {
         this.container = document.getElementById(elementId);
         this.addBtn = document.getElementById(addBtnId);
         this.input = document.getElementById(inputId);
+        // New buttons
+        this.addRgb232Btn = document.getElementById('add-rgb232-btn');
+        this.addRgb322Btn = document.getElementById('add-rgb322-btn');
+        this.addRgb343Btn = document.getElementById('add-rgb343-btn');
+        this.addRgb433Btn = document.getElementById('add-rgb433-btn');
+
         this.colorContainer = document.getElementById('palette-colors');
         this.saveBtn = document.getElementById('save-palette-btn');
         this.deleteCheckbox = document.getElementById('enable-palette-delete');
-        this.palettes = []; // Array of { id, name, colors: [], img: HTMLImageElement }
+        this.palettes = []; // Array of { id, name, colors: [], img: HTMLImageElement, type: 'image'|'default' }
 
         this.init();
     }
@@ -14,6 +20,20 @@ CRT.ui.PaletteManager = class {
     init() {
         this.addBtn.addEventListener('click', () => this.input.click());
         this.input.addEventListener('change', (e) => this.handleFiles(e.target.files));
+
+        if (this.addRgb232Btn) {
+            this.addRgb232Btn.addEventListener('click', () => this.addDefaultPalette(2, 3, 2, 'RGB232 Palette'));
+        }
+        if (this.addRgb322Btn) {
+            this.addRgb322Btn.addEventListener('click', () => this.addDefaultPalette(3, 2, 2, 'RGB322 Palette'));
+        }
+        if (this.addRgb343Btn) {
+            this.addRgb343Btn.addEventListener('click', () => this.addDefaultPalette(3, 4, 3, 'RGB343 Palette'));
+        }
+        if (this.addRgb433Btn) {
+            this.addRgb433Btn.addEventListener('click', () => this.addDefaultPalette(4, 3, 3, 'RGB433 Palette'));
+        }
+
         this.saveBtn.addEventListener('click', () => this.savePalette());
         this.deleteCheckbox.addEventListener('change', () => this.renderColors());
 
@@ -63,7 +83,8 @@ CRT.ui.PaletteManager = class {
                 id: Date.now() + Math.random().toString(36).substr(2, 9),
                 name: file.name,
                 img: img,
-                colors: colors
+                colors: colors,
+                type: 'image'
             };
             this.palettes.push(palette);
         } catch (err) {
@@ -74,6 +95,72 @@ CRT.ui.PaletteManager = class {
         this.render();
         this.renderColors();
         this.input.value = ''; // Reset input
+    }
+
+    /**
+     * Generates a standard RGB palette (plus transparent)
+     * @param {number} rBits 
+     * @param {number} gBits 
+     * @param {number} bBits 
+     * @param {string} name 
+     */
+    addDefaultPalette(rBits, gBits, bBits, name) {
+        this.palettes = []; // Clear existing
+
+        const rLevels = 1 << rBits;
+        const gLevels = 1 << gBits;
+        const bLevels = 1 << bBits;
+
+        // Generate colors
+        // Format: {r,g,b,a}
+        // First color is transparent
+        const colors = [];
+        colors.push({ r: 0, g: 0, b: 0, a: 0 });
+
+        // Iterate through R, G, B
+        // Need to scale 0-(levels-1) to 0-255
+        const scale = (val, levels) => {
+            if (levels <= 1) return 0;
+            return Math.round((val / (levels - 1)) * 255);
+        };
+
+        for (let r = 0; r < rLevels; r++) {
+            for (let g = 0; g < gLevels; g++) {
+                for (let b = 0; b < bLevels; b++) {
+                    colors.push({
+                        r: scale(r, rLevels),
+                        g: scale(g, gLevels),
+                        b: scale(b, bLevels),
+                        a: 255
+                    });
+                }
+            }
+        }
+
+        // Create a dummy canvas for the thumbnail
+        const canvas = document.createElement('canvas');
+        canvas.width = 40;
+        canvas.height = 40;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#333';
+        ctx.fillRect(0, 0, 40, 40);
+        ctx.fillStyle = '#fff';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${rBits}${gBits}${bBits}`, 20, 20);
+
+        const palette = {
+            id: Date.now() + Math.random().toString(36).substr(2, 9),
+            name: name,
+            img: canvas, // Use canvas as image source
+            colors: colors,
+            type: 'default'
+        };
+
+        this.palettes.push(palette);
+        this.render();
+        this.renderColors();
     }
 
     removePalette(id) {
@@ -87,6 +174,8 @@ CRT.ui.PaletteManager = class {
         if (this.palettes.length === 0) return;
 
         const palette = this.palettes[0];
+        // If default palette, allow deletion? No, user requested disable.
+        if (palette.type === 'default') return;
 
         if (palette.colors.length <= 2) {
             alert("Cannot reduce palette to less than 2 colors.");
@@ -122,6 +211,8 @@ CRT.ui.PaletteManager = class {
             thumb.width = 40;
             thumb.height = 40;
             const ctx = thumb.getContext('2d');
+
+            // p.img can be Image or Canvas
             ctx.drawImage(p.img, 0, 0, 40, 40);
 
             const info = document.createElement('div');
@@ -158,12 +249,24 @@ CRT.ui.PaletteManager = class {
             return;
         }
 
-        this.saveBtn.style.display = 'block';
+        const palette = this.palettes[0];
+        const isDefault = palette.type === 'default';
+
+        // Hide delete option for default palettes
         if (this.deleteCheckbox && this.deleteCheckbox.parentElement) {
-            this.deleteCheckbox.parentElement.style.display = 'flex';
+            this.deleteCheckbox.parentElement.style.display = isDefault ? 'none' : 'flex';
         }
 
-        const colors = this.palettes[0].colors;
+        // Do not render chips for default palettes
+        if (isDefault) {
+            this.colorContainer.innerHTML = '<div style="font-size:0.8rem; color:#888; padding:5px;">Color chips hidden for default palette</div>';
+            this.saveBtn.style.display = 'block';
+            return;
+        }
+
+        this.saveBtn.style.display = 'block';
+
+        const colors = palette.colors;
         const canDelete = this.deleteCheckbox.checked;
 
         colors.forEach((c, index) => {
@@ -216,20 +319,10 @@ CRT.ui.PaletteManager = class {
         const allColors = [];
         const seen = new Set();
 
-        const transparentKey = '0,0,0,0';
-        seen.add(transparentKey);
-        allColors.push({ r: 0, g: 0, b: 0, a: 0 });
+        if (this.palettes.length > 0) {
+            return this.palettes[0].colors;
+        }
 
-        this.palettes.forEach(p => {
-            p.colors.forEach(c => {
-                const key = `${c.r},${c.g},${c.b},${c.a}`;
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    allColors.push(c);
-                }
-            });
-        });
-
-        return allColors;
+        return [];
     }
 }

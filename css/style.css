@@ -364,6 +364,12 @@ input[type="number"] {
     border-radius: 8px;
 }
 
+#palette-list .empty-state {
+    height: 100px !important;
+    min-height: 100px;
+    max-height: 100px;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
     width: 8px;

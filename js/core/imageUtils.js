@@ -61,8 +61,8 @@ CRT.core.extractPalette = function (img) {
         // If alpha > 0, treat as full opacity 255 for palette definition purposes 
         const key = `${r},${g},${b},255`;
         if (!uniqueColors.has(key)) {
-            if (palette.length >= 1024) {
-                alert('Palette color limit (1024) reached. Some colors may be missing.');
+            if (palette.length >= 1025) {
+                alert('Palette color limit (1025) reached. Some colors may be missing.');
                 break;
             }
             uniqueColors.add(key);
