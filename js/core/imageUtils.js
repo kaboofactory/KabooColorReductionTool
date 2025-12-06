@@ -667,3 +667,143 @@ CRT.core.createEdgeVisualization = function (sourceData, edgeMap, config) {
     }
     return output;
 };
+
+/**
+ * Downsample image based on dot width and algorithm
+ * @param {ImageData} imageData 
+ * @param {number} dotWidth 
+ * @param {string} algorithm 'smart', 'center', 'average'
+ * @returns {ImageData}
+ */
+CRT.core.downsampleImage = function (imageData, dotWidth, algorithm) {
+    if (dotWidth <= 1) {
+        return new ImageData(
+            new Uint8ClampedArray(imageData.data),
+            imageData.width,
+            imageData.height
+        );
+    }
+
+    const width = imageData.width;
+    const height = imageData.height;
+    const newWidth = Math.floor(width / dotWidth);
+    const newHeight = Math.floor(height / dotWidth);
+    const newData = new Uint8ClampedArray(newWidth * newHeight * 4);
+
+    for (let y = 0; y < newHeight; y++) {
+        for (let x = 0; x < newWidth; x++) {
+            // Define the block
+            const startX = x * dotWidth;
+            const startY = y * dotWidth;
+
+            // Calculate representative color for this block
+            let r, g, b, a;
+
+            if (algorithm === 'center') {
+                // Center Pixel
+                const centerX = Math.min(startX + Math.floor(dotWidth / 2), width - 1);
+                const centerY = Math.min(startY + Math.floor(dotWidth / 2), height - 1);
+                const idx = (centerY * width + centerX) * 4;
+                r = imageData.data[idx];
+                g = imageData.data[idx + 1];
+                b = imageData.data[idx + 2];
+                a = imageData.data[idx + 3];
+
+            } else if (algorithm === 'average') {
+                // Average
+                let sumR = 0, sumG = 0, sumB = 0, sumA = 0;
+                let count = 0;
+                for (let dy = 0; dy < dotWidth; dy++) {
+                    for (let dx = 0; dx < dotWidth; dx++) {
+                        const px = startX + dx;
+                        const py = startY + dy;
+                        if (px < width && py < height) {
+                            const idx = (py * width + px) * 4;
+                            sumR += imageData.data[idx];
+                            sumG += imageData.data[idx + 1];
+                            sumB += imageData.data[idx + 2];
+                            sumA += imageData.data[idx + 3];
+                            count++;
+                        }
+                    }
+                }
+                if (count > 0) {
+                    r = Math.round(sumR / count);
+                    g = Math.round(sumG / count);
+                    b = Math.round(sumB / count);
+                    a = Math.round(sumA / count);
+                }
+
+            } else {
+                // Smart (Quantized Frequency) - Default
+                // 1. Quantize colors (mask lower 4 bits) to group similar "anti-aliased" colors
+                const colorCounts = new Map();
+                // Store sum of colors for each quantized key to get average of the group
+                const colorSums = new Map();
+
+                for (let dy = 0; dy < dotWidth; dy++) {
+                    for (let dx = 0; dx < dotWidth; dx++) {
+                        const px = startX + dx;
+                        const py = startY + dy;
+                        if (px < width && py < height) {
+                            const idx = (py * width + px) * 4;
+                            const pr = imageData.data[idx];
+                            const pg = imageData.data[idx + 1];
+                            const pb = imageData.data[idx + 2];
+                            const pa = imageData.data[idx + 3];
+
+                            // Simple quantization: mask lower 4 bits (step 16)
+                            const qr = pr & 0xF0;
+                            const qg = pg & 0xF0;
+                            const qb = pb & 0xF0;
+                            const qa = pa & 0xF0;
+                            const key = `${qr},${qg},${qb},${qa}`;
+
+                            colorCounts.set(key, (colorCounts.get(key) || 0) + 1);
+
+                            if (!colorSums.has(key)) {
+                                colorSums.set(key, { r: 0, g: 0, b: 0, a: 0, count: 0 });
+                            }
+                            const sum = colorSums.get(key);
+                            sum.r += pr;
+                            sum.g += pg;
+                            sum.b += pb;
+                            sum.a += pa;
+                            sum.count++;
+                        }
+                    }
+                }
+
+                // Find Winner
+                let maxCount = -1;
+                let winnerKey = null;
+                for (const [key, count] of colorCounts) {
+                    if (count > maxCount) {
+                        maxCount = count;
+                        winnerKey = key;
+                    }
+                }
+
+                if (winnerKey) {
+                    const sum = colorSums.get(winnerKey);
+                    r = Math.round(sum.r / sum.count);
+                    g = Math.round(sum.g / sum.count);
+                    b = Math.round(sum.b / sum.count);
+                    a = Math.round(sum.a / sum.count);
+                } else {
+                    // Fallback
+                    r = 0; g = 0; b = 0; a = 0;
+                }
+            }
+
+            // Fill the NEW pixel
+            const newIdx = (y * newWidth + x) * 4;
+            newData[newIdx] = r;
+            newData[newIdx + 1] = g;
+            newData[newIdx + 2] = b;
+            newData[newIdx + 3] = a;
+        }
+    }
+
+    return new ImageData(newData, newWidth, newHeight);
+};

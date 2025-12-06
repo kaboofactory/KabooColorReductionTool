@@ -236,7 +236,21 @@
                 <div class="toolbar">
                     <input type="file" id="source-image-input" accept="image/png, image/jpeg" hidden>
                     <button id="load-image-btn" class="btn secondary">Load Source Image</button>
-                    <button id="clear-comparison-btn" class="btn secondary" disabled>Clear</button>
+
+                    <div
+                        style="display:flex; align-items:center; gap:5px; margin-left:10px; border-left:1px solid #444; padding-left:10px;">
+                        <label for="dot-width-slider" style="font-size:0.8rem;">Dot:</label>
+                        <input type="range" id="dot-width-slider" min="1" max="16" value="1" style="width:80px">
+                        <span id="dot-width-val" style="font-size:0.8rem; width:20px; text-align:center;">1</span>
+                        <select id="downsample-algo" style="font-size:0.8rem; padding:2px;">
+                            <option value="smart">Smart</option>
+                            <option value="center">Center</option>
+                            <option value="average">Avg</option>
+                        </select>
+                    </div>
+
+                    <button id="clear-comparison-btn" class="btn secondary" disabled
+                        style="margin-left:10px;">Clear</button>
                     <div style="display:flex; align-items:center; gap:10px; margin-left:auto">
                         <label for="zoom-slider" style="font-size:0.9rem">Zoom</label>
                         <input type="range" id="zoom-slider" min="10" max="1000" value="100" style="width:200px">

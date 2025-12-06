@@ -35,6 +35,23 @@ document.addEventListener('DOMContentLoaded', () => {
             clearBtn.addEventListener('click', () => this.comparisonView.clearProcessed());
             applyBtn.addEventListener('click', () => this.applyAlgorithm());
 
+            // Dot Width Controls
+            const dotSlider = document.getElementById('dot-width-slider');
+            const dotVal = document.getElementById('dot-width-val');
+            const dotAlgo = document.getElementById('downsample-algo');
+
+            const handleDotChange = () => {
+                const width = parseInt(dotSlider.value, 10);
+                dotVal.textContent = width;
+                this.updateSourceImage();
+            };
+
+            dotSlider.addEventListener('input', (e) => {
+                dotVal.textContent = e.target.value;
+            });
+            dotSlider.addEventListener('change', handleDotChange);
+            dotAlgo.addEventListener('change', handleDotChange);
+
             zoomSlider.addEventListener('input', (e) => {
                 const val = e.target.value;
                 zoomVal.textContent = `${val}%`;
@@ -107,17 +124,41 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!file) return;
 
             try {
-                this.sourceImage = await CRT.core.loadImage(file);
-                this.sourceImageData = CRT.core.getImageData(this.sourceImage);
-                // Edges are calculated dynamically during reduction
+                this.rawSourceImage = await CRT.core.loadImage(file);
+                this.rawImageData = CRT.core.getImageData(this.rawSourceImage);
+                // Reset controls
+                // document.getElementById('dot-width-slider').value = 1; 
+                // document.getElementById('dot-width-val').textContent = '1';
 
-                this.comparisonView.clear();
-                // Add original to comparison
-                this.comparisonView.addItem(this.sourceImageData, null, 'Original');
+                this.updateSourceImage();
             } catch (err) {
                 console.error('Failed to load source image:', err);
                 alert('Failed to load source image.');
             }
+        }
+
+        updateSourceImage() {
+            if (!this.rawImageData) return;
+
+            const dotWidth = parseInt(document.getElementById('dot-width-slider').value, 10);
+            const algo = document.getElementById('downsample-algo').value;
+
+            document.body.style.cursor = 'wait';
+
+            // Allow UI to update before processing
+            setTimeout(() => {
+                try {
+                    this.sourceImageData = CRT.core.downsampleImage(this.rawImageData, dotWidth, algo);
+
+                    this.comparisonView.clear();
+                    // Add processed source to comparison
+                    this.comparisonView.addItem(this.sourceImageData, null, 'Source');
+                } catch (err) {
+                    console.error('Downsampling failed:', err);
+                } finally {
+                    document.body.style.cursor = 'default';
+                }
+            }, 10);
         }
 
         applyAlgorithm() {
