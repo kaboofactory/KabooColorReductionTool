@@ -165,9 +165,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     this.sourceImageData = CRT.core.downsampleImage(this.rawImageData, dotWidth, algo);
 
+                    // Calculate stats
+                    let transparent = 0;
+                    let semiTransparent = 0;
+                    let opaque = 0;
+                    const data = this.sourceImageData.data;
+                    const total = this.sourceImageData.width * this.sourceImageData.height;
+
+                    for (let i = 3; i < data.length; i += 4) {
+                        const a = data[i];
+                        if (a === 0) transparent++;
+                        else if (a === 255) opaque++;
+                        else semiTransparent++;
+                    }
+
+                    const stats = {
+                        width: this.sourceImageData.width,
+                        height: this.sourceImageData.height,
+                        transparent,
+                        semiTransparent,
+                        opaque,
+                        total
+                    };
+
                     this.comparisonView.clear();
                     // Add processed source to comparison
-                    this.comparisonView.addItem(this.sourceImageData, null, 'Source');
+                    this.comparisonView.addItem(this.sourceImageData, null, 'Source', null, stats);
                 } catch (err) {
                     console.error('Downsampling failed:', err);
                 } finally {

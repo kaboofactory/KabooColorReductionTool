@@ -28,14 +28,14 @@ CRT.ui.ComparisonView = class {
         if (this.onUpdate) this.onUpdate(this.items);
     }
 
-    addItem(imageData, config, label, edgeImageData = null) {
+    addItem(imageData, config, label, edgeImageData = null, stats = null) {
         // Remove empty state if present
         if (this.items.length === 0) {
             this.container.innerHTML = '';
         }
 
         const id = Date.now() + Math.random().toString(36).substr(2, 9);
-        const item = { id, imageData, config, label, edgeImageData };
+        const item = { id, imageData, config, label, edgeImageData, stats };
         this.items.push(item);
         this.renderItem(item);
         if (this.onUpdate) this.onUpdate(this.items);
@@ -88,11 +88,16 @@ CRT.ui.ComparisonView = class {
         const ctx = canvas.getContext('2d');
         ctx.putImageData(item.imageData, 0, 0);
 
+        let infoText = this.formatConfig(item.config);
+        if (item.stats) {
+            infoText += `<br>${this.formatStats(item.stats)}`;
+        }
+
         const info = document.createElement('div');
         info.innerHTML = `
             <div style="font-weight:600; font-size:0.9rem; margin-bottom:4px">${item.label || 'Image'}</div>
             <div style="font-size:0.8rem; color:#aaa; line-height:1.4">
-                ${this.formatConfig(item.config)}
+                ${infoText}
             </div>
         `;
 
@@ -129,8 +134,16 @@ CRT.ui.ComparisonView = class {
         this.container.appendChild(wrapper);
     }
 
+    formatStats(stats) {
+        return `<div style="margin-top:4px; font-size:0.75rem; color:#bbb;">
+            ${stats.width}x${stats.height}=${stats.total.toLocaleString()}px<br>
+            <span style="color:#fca5a5">${stats.transparent.toLocaleString()}</span>-<span style="color:#fcd34d">${stats.semiTransparent.toLocaleString()}</span>-<span style="color:#dcfce7">${stats.opaque.toLocaleString()}</span>
+        </div>`;
+    }
+
     formatConfig(config) {
         if (!config) return 'Original';
+
         let text = '';
         switch (config.type) {
             case 'nearest': text = 'Nearest Neighbor (RGB)'; break;
