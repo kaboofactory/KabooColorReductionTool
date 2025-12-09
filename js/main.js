@@ -118,6 +118,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.loadSourceImage(files[0]);
                 }
             }, false);
+
+            // Paste Support
+            document.addEventListener('paste', (e) => {
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                for (let index in items) {
+                    const item = items[index];
+                    if (item.kind === 'file' && item.type.indexOf('image/') !== -1) {
+                        const blob = item.getAsFile();
+                        this.loadSourceImage(blob);
+                        // Prevent default paste behavior (optional, but good if we handled it)
+                        e.preventDefault();
+                        break; // Only load the first image found
+                    }
+                }
+            });
         }
 
         async loadSourceImage(file) {
