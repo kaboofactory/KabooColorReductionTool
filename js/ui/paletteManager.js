@@ -22,10 +22,10 @@ CRT.ui.PaletteManager = class {
         this.input.addEventListener('change', (e) => this.handleFiles(e.target.files));
 
         if (this.addRgb232Btn) {
-            this.addRgb232Btn.addEventListener('click', () => this.addDefaultPalette(2, 3, 2, 'RGB232 Palette'));
+            this.addRgb232Btn.addEventListener('click', () => this.addDefaultPalette(2, 3, 2, 'RGB232 Palette', true));
         }
         if (this.addRgb322Btn) {
-            this.addRgb322Btn.addEventListener('click', () => this.addDefaultPalette(3, 2, 2, 'RGB322 Palette'));
+            this.addRgb322Btn.addEventListener('click', () => this.addDefaultPalette(3, 2, 2, 'RGB322 Palette', true));
         }
         if (this.addRgb343Btn) {
             this.addRgb343Btn.addEventListener('click', () => this.addDefaultPalette(3, 4, 3, 'RGB343 Palette'));
@@ -104,7 +104,7 @@ CRT.ui.PaletteManager = class {
      * @param {number} bBits 
      * @param {string} name 
      */
-    addDefaultPalette(rBits, gBits, bBits, name) {
+    addDefaultPalette(rBits, gBits, bBits, name, includeGrayscale = false) {
         this.palettes = []; // Clear existing
 
         const rLevels = 1 << rBits;
@@ -134,6 +134,18 @@ CRT.ui.PaletteManager = class {
                         a: 255
                     });
                 }
+            }
+        }
+
+        // Add 15 grayscale levels 16..240 (Step 16) if requested
+        if (includeGrayscale) {
+            for (let i = 16; i <= 240; i += 16) {
+                colors.push({
+                    r: i,
+                    g: i,
+                    b: i,
+                    a: 255
+                });
             }
         }
 
