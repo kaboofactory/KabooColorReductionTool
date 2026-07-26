@@ -1,5 +1,5 @@
 /**
- * Convert to Pixel Art v0.9.1
+ * Convert to Pixel Art v0.11
  * Two-dimensional adaptive lattice reconstruction for AI-generated pseudo pixel art.
  *
  * Independent from Pseudo Dot Width / Smart downsampling.
@@ -9,7 +9,7 @@
 
     if (!window.CRT || !CRT.core || CRT.core.__pixelArtConversionInstalled) return;
 
-    const VERSION = '0.9.1';
+    const VERSION = '0.11.0';
     const DEFAULTS = Object.freeze({
         maxColors: 48,
         detailPreservation: 0.60,
@@ -1895,6 +1895,303 @@
         };
     }
 
+    function estimateRegularGridPeriod(source, horizontalAxis, minPeriod, maxPeriod) {
+        const length = horizontalAxis ? source.width : source.height;
+        const lineCount = horizontalAxis ? source.height : source.width;
+        const stride = Math.max(1, Math.floor(lineCount / 360));
+        const histogram = new Float64Array(maxPeriod + 2);
+        const edgeCenters = [];
+        const edgeWeights = [];
+        const edgeThreshold = 0.075;
+        let totalGaps = 0;
+
+        function edgeDistance(i0, i1) {
+            return Math.hypot(
+                (source.L[i0] - source.L[i1]) * 1.2,
+                source.A[i0] - source.A[i1],
+                source.B[i0] - source.B[i1]
+            );
+        }
+
+        for (let q = 0; q < lineCount; q += stride) {
+            let clusterWeighted = 0;
+            let clusterWeight = 0;
+            let clusterLast = -100;
+            let previousCenter = -1;
+
+            function finishCluster() {
+                if (!(clusterWeight > 0)) return;
+                const center = clusterWeighted / clusterWeight;
+                edgeCenters.push(center);
+                edgeWeights.push(Math.min(clusterWeight, 0.8));
+                if (previousCenter >= 0) {
+                    const gap = center - previousCenter;
+                    const rounded = Math.round(gap);
+                    if (rounded >= minPeriod && rounded <= maxPeriod) {
+                        histogram[rounded] += 1;
+                        totalGaps++;
+                    }
+                }
+                previousCenter = center;
+                clusterWeighted = 0;
+                clusterWeight = 0;
+            }
+
+            for (let pos = 1; pos < length; pos++) {
+                const i0 = horizontalAxis
+                    ? q * source.width + pos - 1
+                    : (pos - 1) * source.width + q;
+                const i1 = horizontalAxis ? i0 + 1 : i0 + source.width;
+                const edge = edgeDistance(i0, i1);
+                if (edge < edgeThreshold) continue;
+
+                if (pos - clusterLast > 2 && clusterWeight > 0) finishCluster();
+                clusterWeighted += pos * edge;
+                clusterWeight += edge;
+                clusterLast = pos;
+            }
+            finishCluster();
+        }
+
+        let gapResult = null;
+        if (totalGaps >= 24) {
+            let bestPeriod = -1;
+            let bestScore = -Infinity;
+            for (let period = minPeriod + 1; period < maxPeriod; period++) {
+                const score = histogram[period] + 0.15 * (histogram[period - 1] + histogram[period + 1]);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestPeriod = period;
+                }
+            }
+            if (bestPeriod >= 0) {
+                const neighborhood = histogram[bestPeriod - 1] + histogram[bestPeriod] + histogram[bestPeriod + 1];
+                const concentration = neighborhood / Math.max(1, totalGaps);
+                if (neighborhood >= 20 && concentration >= 0.12) {
+                    const weightedPeriod = (
+                        histogram[bestPeriod - 1] * (bestPeriod - 1) +
+                        histogram[bestPeriod] * bestPeriod +
+                        histogram[bestPeriod + 1] * (bestPeriod + 1)
+                    ) / Math.max(1e-6, neighborhood);
+                    gapResult = {
+                        period: weightedPeriod,
+                        peak: bestPeriod,
+                        confidence: clamp(concentration / 0.38, 0, 1),
+                        concentration,
+                        support: neighborhood,
+                        method: 'gap'
+                    };
+                }
+            }
+        }
+
+        // Sparse sprites may not contain enough adjacent edge pairs for a gap
+        // histogram, but their edge coordinates still share one grid phase.
+        // Circular phase coherence detects that case without assuming the image
+        // is filled with texture.
+        let phaseResult = null;
+        if (edgeCenters.length >= 36) {
+            let totalWeight = 0;
+            for (const weight of edgeWeights) totalWeight += weight;
+            let bestConcentration = 0;
+            let bestPeriod = 0;
+            for (let period = minPeriod; period <= maxPeriod + 1e-6; period += 0.25) {
+                let real = 0, imaginary = 0;
+                const scale = Math.PI * 2 / period;
+                for (let i = 0; i < edgeCenters.length; i++) {
+                    const angle = edgeCenters[i] * scale;
+                    const weight = edgeWeights[i];
+                    real += Math.cos(angle) * weight;
+                    imaginary += Math.sin(angle) * weight;
+                }
+                const concentration = Math.hypot(real, imaginary) / Math.max(1e-6, totalWeight);
+                if (concentration > bestConcentration) {
+                    bestConcentration = concentration;
+                    bestPeriod = period;
+                }
+            }
+            if (bestConcentration >= 0.42) {
+                phaseResult = {
+                    period: bestPeriod,
+                    peak: bestPeriod,
+                    confidence: clamp((bestConcentration - 0.25) / 0.70, 0, 1),
+                    concentration: bestConcentration,
+                    support: edgeCenters.length,
+                    method: 'phase'
+                };
+            }
+        }
+
+        if (!gapResult) return phaseResult;
+        if (!phaseResult) return gapResult;
+        if (phaseResult.concentration >= 0.75) return phaseResult;
+        return phaseResult.confidence > gapResult.confidence + 0.12 ? phaseResult : gapResult;
+    }
+
+    function regularGridFlatCellShare(source, columns, rows) {
+        const stepX = Math.max(1, Math.ceil(columns / 42));
+        const stepY = Math.max(1, Math.ceil(rows / 42));
+        const probes = [
+            [0.50, 0.50], [0.25, 0.25], [0.75, 0.25],
+            [0.25, 0.75], [0.75, 0.75]
+        ];
+        let flat = 0, total = 0;
+
+        for (let y = 0; y < rows; y += stepY) {
+            for (let x = 0; x < columns; x += stepX) {
+                const colors = [];
+                for (const probe of probes) {
+                    const sx = clamp(Math.floor((x + probe[0]) * source.width / columns), 0, source.width - 1);
+                    const sy = clamp(Math.floor((y + probe[1]) * source.height / rows), 0, source.height - 1);
+                    const i = sy * source.width + sx;
+                    colors.push({ L: source.L[i], A: source.A[i], B: source.B[i] });
+                }
+                let maxDistance = 0;
+                for (let a = 1; a < colors.length; a++) {
+                    maxDistance = Math.max(maxDistance, Math.sqrt(distSq(colors[0], colors[a])));
+                }
+                if (maxDistance <= 0.090) flat++;
+                total++;
+            }
+        }
+        return total ? flat / total : 0;
+    }
+
+    function detectRegularPixelGrid(source, options) {
+        const minPeriod = Math.max(13, Math.ceil(options.maxCellSize + 1));
+        const maxPeriod = Math.min(96, Math.floor(Math.min(source.width, source.height) / 6));
+        if (maxPeriod <= minPeriod + 2) return null;
+
+        const x = estimateRegularGridPeriod(source, true, minPeriod, maxPeriod);
+        const y = estimateRegularGridPeriod(source, false, minPeriod, maxPeriod);
+        if (!x || !y) return null;
+
+        const aspectRatio = Math.max(x.period, y.period) / Math.max(1e-6, Math.min(x.period, y.period));
+        if (aspectRatio > 1.24) return null;
+
+        const columns = Math.round(source.width / x.period);
+        const rows = Math.round(source.height / y.period);
+        if (columns < 8 || rows < 8 || columns > 256 || rows > 256) return null;
+
+        const baseCellWidth = source.width / columns;
+        const baseCellHeight = source.height / rows;
+        if (baseCellWidth < minPeriod * 0.82 || baseCellHeight < minPeriod * 0.82) return null;
+
+        const flatCellShare = regularGridFlatCellShare(source, columns, rows);
+        const confidence = Math.min(x.confidence, y.confidence) * clamp((flatCellShare - 0.50) / 0.35, 0, 1);
+        if (flatCellShare < 0.68 || confidence < 0.20) return null;
+
+        const xProfile = buildAxisEdgeProfile(source, true, 0, source.height);
+        const yProfile = buildAxisEdgeProfile(source, false, 0, source.width);
+        const xPhase = estimateRegularGridPhase(xProfile, x.period);
+        const yPhase = estimateRegularGridPhase(yProfile, y.period);
+
+        return {
+            columns,
+            rows,
+            periodX: x.period,
+            periodY: y.period,
+            baseCellWidth,
+            baseCellHeight,
+            flatCellShare,
+            confidence,
+            xConfidence: x.confidence,
+            yConfidence: y.confidence,
+            offsetX: xPhase.phase,
+            offsetY: yPhase.phase,
+            phaseScoreX: xPhase.score,
+            phaseScoreY: yPhase.score
+        };
+    }
+
+    function estimateRegularGridPhase(profile, period) {
+        let bestPhase = 0;
+        let bestScore = -Infinity;
+        for (let phase = 0; phase < period; phase += 0.25) {
+            let boundary = 0, interior = 0, boundaryCount = 0, interiorCount = 0;
+            for (let p = phase; p < profile.length; p += period) {
+                boundary += sampleProfile(profile, p);
+                boundaryCount++;
+            }
+            for (let p = phase + period * 0.5; p < profile.length; p += period) {
+                interior += sampleProfile(profile, p);
+                interiorCount++;
+            }
+            const boundaryMean = boundaryCount ? boundary / boundaryCount : 0;
+            const interiorMean = interiorCount ? interior / interiorCount : 0;
+            const score = boundaryMean * 1.08 - interiorMean * 0.78;
+            if (score > bestScore) {
+                bestScore = score;
+                bestPhase = phase;
+            }
+        }
+        return { phase: bestPhase, score: bestScore };
+    }
+
+    function buildOffsetUniformMesh(sourceWidth, sourceHeight, columns, rows, offsetX, offsetY, periodX, periodY) {
+        const meshWidth = columns + 1;
+        const meshHeight = rows + 1;
+        const points = new Float32Array(meshWidth * meshHeight * 2);
+        for (let y = 0; y <= rows; y++) {
+            let py = offsetY + y * periodY;
+            if (y === 0) py = 0;
+            else if (y === rows) py = sourceHeight;
+            else py = clamp(py, 0, sourceHeight);
+            for (let x = 0; x <= columns; x++) {
+                let px = offsetX + x * periodX;
+                if (x === 0) px = 0;
+                else if (x === columns) px = sourceWidth;
+                else px = clamp(px, 0, sourceWidth);
+                const p = (y * meshWidth + x) * 2;
+                points[p] = px;
+                points[p + 1] = py;
+            }
+        }
+        return { points, width: meshWidth, height: meshHeight, cols: columns, rows };
+    }
+
+    function renderRepresentativeCells(cellGrid, options) {
+        const { width, height, cells } = cellGrid;
+        const data = new Uint8ClampedArray(width * height * 4);
+        const structureProtection = clamp(numberOrDefault(options.structureProtection, DEFAULTS.structureProtection), 0, 1);
+        const microSensitivity = clamp(numberOrDefault(options.microstructureSensitivity, DEFAULTS.microstructureSensitivity), 0, 1);
+        const detail = clamp(numberOrDefault(options.detailPreservation, DEFAULTS.detailPreservation), 0, 1);
+        const structureThreshold = 0.38 + (1 - structureProtection) * 0.18;
+        const microThreshold = 0.12 + (1 - microSensitivity) * 0.06;
+        let uniqueColors = new Set();
+        for (let i = 0; i < cells.length; i++) {
+            const c = cells[i];
+            if (!c || c.transparent) continue;
+            let color = c;
+            if (c.structurePreferredColor && c.structureScore >= structureThreshold && c.corePurity >= 0.52) {
+                color = c.structurePreferredColor;
+            } else if (c.microPreferredColor && c.microScore >= microThreshold && c.contrast >= 0.16 && c.lowChromaScore >= 0.25) {
+                color = c.microPreferredColor;
+            }
+            const p = i * 4;
+            data[p] = color.r; data[p + 1] = color.g; data[p + 2] = color.b; data[p + 3] = c.alpha !== undefined ? c.alpha : 255;
+            uniqueColors.add(`${data[p]},${data[p+1]},${data[p+2]},${data[p+3]}`);
+        }
+        const image = new ImageData(data, width, height);
+        image.__regularGridDirectInfo = { uniqueColors: uniqueColors.size, detailPreservation: detail };
+        return image;
+    }
+
+    function buildUniformMesh(sourceWidth, sourceHeight, columns, rows) {
+        const meshWidth = columns + 1;
+        const meshHeight = rows + 1;
+        const points = new Float32Array(meshWidth * meshHeight * 2);
+        for (let y = 0; y <= rows; y++) {
+            const py = y * sourceHeight / rows;
+            for (let x = 0; x <= columns; x++) {
+                const p = (y * meshWidth + x) * 2;
+                points[p] = x * sourceWidth / columns;
+                points[p + 1] = py;
+            }
+        }
+        return { points, width: meshWidth, height: meshHeight, cols: columns, rows };
+    }
+
     function render(mapped, palette, width, height) {
         const data = new Uint8ClampedArray(width * height * 4);
         for (let i = 0; i < width * height; i++) {
@@ -1932,41 +2229,82 @@
         options.axisSeamProtection = clamp(numberOrDefault(options.axisSeamProtection, DEFAULTS.axisSeamProtection), 0, 1);
 
         const source = analyze(imageData);
-        const xProfile = buildAxisEdgeProfile(source, true, 0, source.height);
-        const yProfile = buildAxisEdgeProfile(source, false, 0, source.width);
-        const estimatedX = estimateBasePeriod(xProfile, options.minCellSize, options.maxCellSize);
-        const estimatedY = estimateBasePeriod(yProfile, options.minCellSize, options.maxCellSize);
-        const globalX = solveAdaptiveBoundaries(xProfile, estimatedX, options.detailPreservation);
-        const globalY = solveAdaptiveBoundaries(yProfile, estimatedY, options.detailPreservation);
-        const baseX = source.width / Math.max(1, globalX.length - 1);
-        const baseY = source.height / Math.max(1, globalY.length - 1);
+        const regularGrid = detectRegularPixelGrid(source, options);
+        let estimatedX, estimatedY, baseX, baseY, mesh;
+        let horizontalBands = 0, verticalBands = 0;
+        let xStats = { mean: 0, max: 0 }, yStats = { mean: 0, max: 0 };
 
-        const xField = buildBoundaryField(source, true, globalX, baseX, baseY, options);
-        const yField = buildBoundaryField(source, false, globalY, baseY, baseX, options);
-        const mesh = buildMesh(xField, yField, globalX, globalY, source.width, source.height);
+        if (regularGrid) {
+            estimatedX = regularGrid.periodX;
+            estimatedY = regularGrid.periodY;
+            baseX = regularGrid.baseCellWidth;
+            baseY = regularGrid.baseCellHeight;
+            mesh = buildOffsetUniformMesh(
+                source.width, source.height,
+                regularGrid.columns, regularGrid.rows,
+                regularGrid.offsetX || 0,
+                regularGrid.offsetY || 0,
+                regularGrid.periodX,
+                regularGrid.periodY
+            );
+        } else {
+            const xProfile = buildAxisEdgeProfile(source, true, 0, source.height);
+            const yProfile = buildAxisEdgeProfile(source, false, 0, source.width);
+            estimatedX = estimateBasePeriod(xProfile, options.minCellSize, options.maxCellSize);
+            estimatedY = estimateBasePeriod(yProfile, options.minCellSize, options.maxCellSize);
+            const globalX = solveAdaptiveBoundaries(xProfile, estimatedX, options.detailPreservation);
+            const globalY = solveAdaptiveBoundaries(yProfile, estimatedY, options.detailPreservation);
+            baseX = source.width / Math.max(1, globalX.length - 1);
+            baseY = source.height / Math.max(1, globalY.length - 1);
+            const xField = buildBoundaryField(source, true, globalX, baseX, baseY, options);
+            const yField = buildBoundaryField(source, false, globalY, baseY, baseX, options);
+            mesh = buildMesh(xField, yField, globalX, globalY, source.width, source.height);
+            horizontalBands = xField.rows.length;
+            verticalBands = yField.rows.length;
+            xStats = fieldDisplacementStats(xField, globalX);
+            yStats = fieldDisplacementStats(yField, globalY);
+        }
+
         const cellGrid = buildCellRepresentatives(source, mesh, options);
-        const binaryInfo = detectBinaryRegions(cellGrid, options);
-        const palette = extractPalette(cellGrid, options.maxColors, binaryInfo);
-        const mapped = mapAndPolish(cellGrid, palette, options, binaryInfo);
-        const rectilinear = protectRectilinearFrames(mapped, palette, cellGrid.width, cellGrid.height, options);
-        const silhouetteEdges = protectIsolatedSilhouetteEdges(rectilinear.mapped, palette, cellGrid.width, cellGrid.height, options);
-        const seams = protectAxisAlignedSeams(silhouetteEdges.mapped, palette, cellGrid.width, cellGrid.height, options);
-        const image = render(seams.mapped, palette, cellGrid.width, cellGrid.height);
-        const xStats = fieldDisplacementStats(xField, globalX);
-        const yStats = fieldDisplacementStats(yField, globalY);
+        let image;
+        let binaryInfo = { regions: [], protectedCells: 0 };
+        let rectilinear = { frameCount: 0, snappedCells: 0 };
+        let silhouetteEdges = { componentCount: 0, snappedCells: 0 };
+        let seams = { seamCount: 0, snappedCells: 0, horizontalSeams: 0, verticalSeams: 0 };
+
+        if (regularGrid) {
+            image = renderRepresentativeCells(cellGrid, options);
+        } else {
+            binaryInfo = detectBinaryRegions(cellGrid, options);
+            const palette = extractPalette(cellGrid, options.maxColors, binaryInfo);
+            const mapped = mapAndPolish(cellGrid, palette, options, binaryInfo);
+            rectilinear = protectRectilinearFrames(mapped, palette, cellGrid.width, cellGrid.height, options);
+            silhouetteEdges = protectIsolatedSilhouetteEdges(rectilinear.mapped, palette, cellGrid.width, cellGrid.height, options);
+            seams = protectAxisAlignedSeams(silhouetteEdges.mapped, palette, cellGrid.width, cellGrid.height, options);
+            image = render(seams.mapped, palette, cellGrid.width, cellGrid.height);
+        }
+
         image.__pixelArtConversionInfo = {
+            conversionMode: regularGrid ? 'regular-grid-conservative' : 'adaptive-mesh',
             estimatedCellWidth: estimatedX,
             estimatedCellHeight: estimatedY,
             baseCellWidth: baseX,
             baseCellHeight: baseY,
-            outputWidth: cellGrid.width,
-            outputHeight: cellGrid.height,
-            horizontalBands: xField.rows.length,
-            verticalBands: yField.rows.length,
+            outputWidth: image.width,
+            outputHeight: image.height,
+            horizontalBands,
+            verticalBands,
             meanWarpX: xStats.mean,
             maxWarpX: xStats.max,
             meanWarpY: yStats.mean,
             maxWarpY: yStats.max,
+            regularGridConfidence: regularGrid ? regularGrid.confidence : 0,
+            regularGridFlatCellShare: regularGrid ? regularGrid.flatCellShare : 0,
+            regularGridOffsetX: regularGrid ? regularGrid.offsetX : 0,
+            regularGridOffsetY: regularGrid ? regularGrid.offsetY : 0,
+            regularGridPhaseScoreX: regularGrid ? regularGrid.phaseScoreX : 0,
+            regularGridPhaseScoreY: regularGrid ? regularGrid.phaseScoreY : 0,
+            regularGridDirectUniqueColors: image.__regularGridDirectInfo ? image.__regularGridDirectInfo.uniqueColors : 0,
             structureProtection: options.structureProtection,
             binaryRegionProtection: options.binaryRegionProtection,
             binaryRegionCount: binaryInfo.regions.length,
@@ -2132,7 +2470,7 @@
             <label style="display:block;font-size:.75rem;margin-top:7px">Axis Seam Protection <span id="pixel-art-seam-val">0.82</span></label>
             <input id="pixel-art-seam" type="range" min="0" max="1" step="0.05" value="0.82" style="width:100%">
             <div style="font-size:.68rem;color:#999;margin-top:7px;line-height:1.35">
-                Uses an adaptive mesh with central-stroke, binary-region, frame, isolated-silhouette, and axis-aligned seam protection. Pseudo Dot Width is not used.
+                Automatically detects already-enlarged regular pixel art and restores its native grid; otherwise uses the adaptive mesh and protection passes. Pseudo Dot Width is not used.
             </div>
             <div style="display:flex;justify-content:flex-end;margin-top:9px">
                 <button id="pixel-art-reset" type="button" class="btn small" style="min-width:68px">Reset</button>
@@ -2203,10 +2541,12 @@
                     const dotVal = document.getElementById('dot-width-val');
                     dotSlider.value = '1'; dotVal.textContent = '1';
                     const info = result.__pixelArtConversionInfo;
+                    const modeText = info.conversionMode === 'regular-grid'
+                        ? `regular grid ${(info.regularGridConfidence * 100).toFixed(0)}%`
+                        : `adaptive mesh ${info.horizontalBands}×${info.verticalBands} bands`;
                     panel.querySelector('#pixel-art-info').textContent =
-                        `Estimated cell ${info.estimatedCellWidth.toFixed(2)}×${info.estimatedCellHeight.toFixed(2)}px; ` +
+                        `${modeText}; estimated cell ${info.estimatedCellWidth.toFixed(2)}×${info.estimatedCellHeight.toFixed(2)}px; ` +
                         `output ${info.outputWidth}×${info.outputHeight}; ` +
-                        `mesh ${info.horizontalBands}×${info.verticalBands} bands; ` +
                         `binary ${info.binaryRegionCount} regions / ${info.binaryProtectedCells} cells; ` +
                         `frames ${info.rectilinearFrameCount} / snap ${info.rectilinearSnappedCells}; ` +
                         `silhouettes ${info.silhouetteComponentCount} / snap ${info.silhouetteSnappedCells}; ` +
