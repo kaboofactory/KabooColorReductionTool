@@ -116,6 +116,57 @@
                 「ドット絵風」イラストを、本物のドット絵に近づける努力(縮小処理)をします。何ドット幅の絵であるかはユーザが1～16の範囲で指定してください(1は何もしません)。コンボボックスのSmartはなんかうまいことします。Centerは中央ドット採用、Avgは平均値採用します。
             </div>
         </div>
+        <div class="lang-block">
+            <div class="en">
+                <strong>Highlight Recovery (Smart only):</strong>
+                Enable <strong>Recover Small Highlights</strong> to preserve tiny bright details that would otherwise
+                disappear during strong downsampling, such as eye highlights, gem reflections, blade glints, and
+                reflections on bottles. Highlight Recovery does not change the palette selected by Smart. Instead, it
+                detects important bright micro-features in the source image and may relocate them by a small number of
+                output pixels so they remain visible in the reduced image.
+                <ul>
+                    <li><strong>Min Contrast:</strong> Sets the minimum brightness difference between a highlight and its
+                        surroundings. Increase it to ignore weak light variations; decrease it to recover subtler
+                        highlights.</li>
+                    <li><strong>Min Brightness:</strong> Sets the minimum absolute brightness of a recoverable feature.
+                        Increase it to keep only white or near-white highlights; decrease it to include colored bright
+                        details.</li>
+                    <li><strong>Recovery Strength:</strong> Controls how strongly a detected highlight may override the
+                        normal Smart result.</li>
+                    <li><strong>Max Move:</strong> Sets the maximum distance, in output pixels, that a highlight may be
+                        relocated to avoid replacing an important base pixel.</li>
+                    <li><strong>Max Feature Size:</strong> Sets the largest source feature, relative to one output cell,
+                        that may be treated as a small highlight. Increase it when eye highlights are larger than the
+                        current limit.</li>
+                    <li><strong>Max Recoveries:</strong> Sets the maximum number of highlights that may be restored in one
+                        image.</li>
+                </ul>
+                While dragging a slider, only the displayed value changes. The image is processed after you release the
+                slider. Click <strong>Reset</strong> to restore all Highlight Recovery sliders to their default values;
+                the color count and the Recover Small Highlights checkbox are not changed. Very permissive settings may
+                restore unwanted bright dots, so compare the result with Highlight Recovery turned off while tuning the
+                parameters.
+            </div>
+            <div class="jp">
+                <strong>Highlight Recovery（Smartのみ）:</strong>
+                <strong>Recover Small Highlights</strong>を有効にすると、強い縮小によって消えやすい小さな明部を保持します。対象には、瞳のハイライト、宝石の反射、剣のきらめき、瓶の反射などが含まれます。Highlight
+                RecoveryはSmartが選択したパレットを変更しません。代わりに、元画像から重要な微小ハイライトを検出し、縮小後も見えるよう必要に応じて出力上の位置を数ドット以内で移動します。
+                <ul>
+                    <li><strong>Min Contrast:</strong>
+                        ハイライトと周囲の最低限の明度差を指定します。値を上げると弱い明暗差を無視し、下げると控えめなハイライトも拾いやすくなります。</li>
+                    <li><strong>Min Brightness:</strong>
+                        復元対象とする明部の最低明度を指定します。値を上げると白または白に近いハイライトだけを残し、下げると色付きの明るいディテールも対象になります。</li>
+                    <li><strong>Recovery Strength:</strong> 検出したハイライトを、通常のSmart縮小結果よりどの程度強く優先するかを指定します。</li>
+                    <li><strong>Max Move:</strong> 重要な基礎ドットを上書きしないために、ハイライトを縮小後の画像上で最大何ドット移動してよいかを指定します。</li>
+                    <li><strong>Max Feature Size:</strong>
+                        1つの出力セルに対する比率で、微小ハイライトとして扱う元画像上の最大サイズを指定します。瞳のハイライトが制限より大きい場合は値を上げてください。</li>
+                    <li><strong>Max Recoveries:</strong> 1枚の画像で復元するハイライトの最大数を指定します。</li>
+                </ul>
+                スライダーをドラッグしている間は表示値だけが変化し、スライダーを離した時点で画像へ適用されます。<strong>Reset</strong>をクリックするとHighlight
+                Recovery内の全スライダーが規定値に戻ります。色数とRecover Small Highlightsのチェック状態は変更されません。設定を緩くしすぎると不要な明点も復元されるため、調整時はHighlight
+                RecoveryをOFFにした結果と比較してください。
+            </div>
+        </div>
     </div>
 
     <div class="section">
