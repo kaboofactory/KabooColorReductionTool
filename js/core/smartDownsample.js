@@ -1,5 +1,5 @@
 /**
- * Smart downsampling v3 for Kaboo Color Reduction Tool.
+ * Smart downsampling v4.10 for Kaboo Color Reduction Tool.
  *
  * Goal:
  *   Reconstruct a small, finite-palette pixel grid from AI-generated
@@ -15,7 +15,7 @@
 
     if (!window.CRT || !CRT.core || typeof CRT.core.downsampleImage !== 'function') return;
 
-    const VERSION = '4.5.0';
+    const VERSION = '4.10.0';
     const MAX_CANDIDATES = 5;
     const EPSILON = 1e-9;
 

@@ -90,40 +90,113 @@
 
     <div class="section">
         <h2>2. Loading Source Image / 元画像の読み込み</h2>
+
         <div class="lang-block">
             <div class="en">
                 <strong>Load Source Image:</strong> Click this button to select the image you want to process (PNG or
-                JPG). The image will be displayed in the main area. You can zoom in/out using the slider (or mouse
-                wheel).
+                JPG). The image will be displayed in the main area. You can zoom in or out using the zoom slider or the
+                mouse wheel.
             </div>
             <div class="jp">
                 <strong>Load Source Image:</strong>
-                このボタンをクリックして、処理したい画像（PNGまたはJPG）を選択します。画像はメインエリアに表示されます。スライダー(またはマウスのホイール)を使って拡大/縮小が可能です。
+                このボタンをクリックして、処理したい画像（PNGまたはJPG）を選択します。画像はメインエリアに表示されます。ズームスライダーまたはマウスホイールで拡大・縮小できます。
             </div>
         </div>
+
         <div class="lang-block">
             <div class="en">
-                <strong>Pseudo Dot Width:</strong> "Pixel art style" illustrations will be processed (scaled down) to
-                more closely resemble genuine pixel art.
-                The user should specify the desired width of the image in pixels, ranging from 1 to 16 (1 does nothing;
-                images will be scaled
-                down to 1/specified value of their original size). The "Smart" option in the combo box will apply a
-                clever process. "Center"
-                will use the center pixel, and "Avg" will use the average value.
+                <strong>Convert to Pixel Art:</strong> This button is located immediately to the right of
+                <strong>Load Source Image</strong>. It is intended for AI-generated or enlarged illustrations that look
+                like pixel art but do not yet use a consistent one-pixel grid. The converter estimates the underlying
+                pseudo-pixel cell size and reconstructs the image as a smaller, true pixel grid. It automatically works
+                to preserve small structures, two-color details, rectangular frames, isolated silhouettes, and long
+                horizontal or vertical seams.
+                <br><br>
+                This conversion is independent of <strong>Pseudo Dot Width</strong> and does not use the Smart, Center,
+                or Avg downsampling modes. Load an image first, then click <strong>Convert to Pixel Art</strong>. The
+                button temporarily changes to <strong>Converting...</strong> while processing, and the converted image
+                is then displayed in the normal source-image view.
+            </div>
+            <div class="jp">
+                <strong>Convert to Pixel Art:</strong>
+                このボタンは<strong>Load Source Image</strong>のすぐ右にあります。AI生成画像や拡大画像など、ドット絵風に見えても1ピクセル単位のグリッドが揃っていない画像を、実際の小さなドット絵へ再構成するための機能です。元画像に含まれる疑似ドットのセルサイズを自動推定し、細かな構造、2色で描かれたディテール、長方形の枠、背景から独立したシルエット、長い水平・垂直境界などをできるだけ保ちながら縮小します。
+                <br><br>
+                この変換は<strong>Pseudo Dot Width</strong>とは独立しており、Smart、Center、Avgの縮小方式も使用しません。先に画像を読み込み、<strong>Convert
+                    to Pixel Art</strong>をクリックしてください。処理中はボタン表示が<strong>Converting...</strong>に変わり、完了すると変換結果が通常の元画像表示欄に表示されます。
+            </div>
+        </div>
+
+        <div class="lang-block">
+            <div class="en">
+                <strong>Options (Convert to Pixel Art):</strong> Click <strong>Options</strong> next to the conversion
+                button to open a small floating settings window. Opening it does not push the rest of the interface
+                downward.
+                <ul>
+                    <li><strong>Palette Colors (default: 48):</strong> Sets the maximum number of colors used in the
+                        converted image.</li>
+                    <li><strong>Detail Preservation (default: 0.60):</strong> Controls how strongly local edges and
+                        details influence cell reconstruction.</li>
+                    <li><strong>Structure Protection (default: 0.90):</strong> Preserves central strokes, endpoints,
+                        tiny holes, and other small structural features.</li>
+                    <li><strong>Binary Region Protection (default: 0.88):</strong> Detects regions that are likely meant
+                        to use only two colors and prevents unwanted intermediate colors from appearing.</li>
+                    <li><strong>Rectilinear Protection (default: 0.88):</strong> Straightens detected rectangular frames
+                        and other strongly supported right-angled structures.</li>
+                    <li><strong>Silhouette Edge Protection (default: 0.88):</strong> Cleans antialiased or frayed edges on
+                        isolated objects, such as floating platforms.</li>
+                    <li><strong>Axis Seam Protection (default: 0.82):</strong> Stabilizes long horizontal and vertical
+                        boundaries, such as the border between a HUD panel and the game background.</li>
+                    <li><strong>Reset:</strong> Restores all Convert to Pixel Art settings in this window to the default
+                        values listed above. It does not immediately start a conversion.</li>
+                </ul>
+                The information line at the bottom of the window shows the estimated cell size, output size, mesh
+                statistics, and the number of protected structures detected during the most recent conversion.
+            </div>
+            <div class="jp">
+                <strong>Options（Convert to Pixel Art）:</strong>
+                変換ボタンの横にある<strong>Options</strong>をクリックすると、小さな設定ウィンドウが表示されます。開いても画面内のほかの項目を下へ押し広げません。
+                <ul>
+                    <li><strong>Palette Colors（既定値: 48）:</strong> 変換後の画像で使用する最大色数を指定します。</li>
+                    <li><strong>Detail Preservation（既定値: 0.60）:</strong> セルの再構成時に、局所的なエッジや細部をどの程度強く反映するかを指定します。</li>
+                    <li><strong>Structure Protection（既定値: 0.90）:</strong> 中央を通る細線、端点、小さな穴などの微細な形状を保護します。</li>
+                    <li><strong>Binary Region Protection（既定値: 0.88）:</strong>
+                        本来2色で描かれている可能性が高い領域を検出し、不要な中間色が混入するのを抑えます。</li>
+                    <li><strong>Rectilinear Protection（既定値: 0.88）:</strong> 長方形の枠や、強い根拠のある直角構造をまっすぐに整えます。</li>
+                    <li><strong>Silhouette Edge Protection（既定値: 0.88）:</strong>
+                        空中足場など、背景から独立した物体のアンチエイリアスや毛羽立った輪郭を整理します。</li>
+                    <li><strong>Axis Seam Protection（既定値: 0.82）:</strong>
+                        HUDとゲーム画面の境界など、長く続く水平・垂直の境界線を安定させます。</li>
+                    <li><strong>Reset:</strong> このウィンドウ内のConvert to Pixel
+                        Art設定を、上記の既定値へまとめて戻します。Resetを押しただけでは変換処理は開始されません。</li>
+                </ul>
+                ウィンドウ下部の情報欄には、直前の変換で推定されたセルサイズ、出力サイズ、メッシュ情報、検出・保護された構造の数などが表示されます。
+            </div>
+        </div>
+
+        <div class="lang-block">
+            <div class="en">
+                <strong>Pseudo Dot Width:</strong> Use this when you already know the source image's pseudo-pixel width
+                and want to downsample it manually. Select a value from 1 to 16. A value of 1 leaves the size unchanged;
+                other values reduce the image to approximately 1/the selected value of its original width and height.
+                <strong>Smart</strong> analyzes each block and attempts to preserve important colors and structures,
+                <strong>Center</strong> uses the center pixel of each block, and <strong>Avg</strong> uses the average
+                color of the block.
             </div>
             <div class="jp">
                 <strong>Pseudo Dot Width:</strong>
-                「ドット絵風」イラストを、本物のドット絵に近づける努力(縮小処理)をします。何ドット幅の絵であるかはユーザが1～16の範囲で指定してください(1は何もしません)。コンボボックスのSmartはなんかうまいことします。Centerは中央ドット採用、Avgは平均値採用します。
+                元画像の疑似ドット幅が分かっており、手動で縮小率を指定したい場合に使用します。1～16の範囲で指定し、1ではサイズを変更しません。それ以外では、元画像の縦横がおおむね指定値分の1になります。<strong>Smart</strong>は各ブロックを解析して重要な色や形状の保持を試み、<strong>Center</strong>は各ブロックの中央ピクセルを採用し、<strong>Avg</strong>はブロック内の平均色を使用します。
             </div>
         </div>
+
         <div class="lang-block">
             <div class="en">
-                <strong>Highlight Recovery (Smart only):</strong>
-                Enable <strong>Recover Small Highlights</strong> to preserve tiny bright details that would otherwise
-                disappear during strong downsampling, such as eye highlights, gem reflections, blade glints, and
-                reflections on bottles. Highlight Recovery does not change the palette selected by Smart. Instead, it
-                detects important bright micro-features in the source image and may relocate them by a small number of
-                output pixels so they remain visible in the reduced image.
+                <strong>Highlight Recovery (Smart only):</strong> Click <strong>Highlight Recovery</strong> to open its
+                settings in a small floating window. Enable <strong>Recover Small Highlights</strong> to preserve tiny
+                bright details that would otherwise disappear during strong Smart downsampling, such as eye
+                highlights, gem reflections, blade glints, and reflections on bottles. Highlight Recovery does not
+                change the palette selected by Smart. Instead, it detects important bright micro-features in the source
+                image and may relocate them by a small number of output pixels so they remain visible in the reduced
+                image.
                 <ul>
                     <li><strong>Min Contrast:</strong> Sets the minimum brightness difference between a highlight and its
                         surroundings. Increase it to ignore weak light variations; decrease it to recover subtler
@@ -149,7 +222,8 @@
             </div>
             <div class="jp">
                 <strong>Highlight Recovery（Smartのみ）:</strong>
-                <strong>Recover Small Highlights</strong>を有効にすると、強い縮小によって消えやすい小さな明部を保持します。対象には、瞳のハイライト、宝石の反射、剣のきらめき、瓶の反射などが含まれます。Highlight
+                <strong>Highlight Recovery</strong>をクリックすると、小さな設定ウィンドウが表示されます。<strong>Recover Small
+                    Highlights</strong>を有効にすると、Smartによる強い縮小で消えやすい小さな明部を保持します。対象には、瞳のハイライト、宝石の反射、剣のきらめき、瓶の反射などが含まれます。Highlight
                 RecoveryはSmartが選択したパレットを変更しません。代わりに、元画像から重要な微小ハイライトを検出し、縮小後も見えるよう必要に応じて出力上の位置を数ドット以内で移動します。
                 <ul>
                     <li><strong>Min Contrast:</strong>
@@ -163,7 +237,7 @@
                     <li><strong>Max Recoveries:</strong> 1枚の画像で復元するハイライトの最大数を指定します。</li>
                 </ul>
                 スライダーをドラッグしている間は表示値だけが変化し、スライダーを離した時点で画像へ適用されます。<strong>Reset</strong>をクリックするとHighlight
-                Recovery内の全スライダーが規定値に戻ります。色数とRecover Small Highlightsのチェック状態は変更されません。設定を緩くしすぎると不要な明点も復元されるため、調整時はHighlight
+                Recovery内の全スライダーが既定値に戻ります。色数とRecover Small Highlightsのチェック状態は変更されません。設定を緩くしすぎると不要な明点も復元されるため、調整時はHighlight
                 RecoveryをOFFにした結果と比較してください。
             </div>
         </div>
